@@ -20,3 +20,10 @@ def wrangle(filepath):
 
     return df
 
+
+def input_for_matplotlib(ax):
+
+    ax.set_xlabel(input("Enter label for x: "))
+    ax.set_ylabel(input("Enter label for y: "))
+    ax.set_title(input("Enter Title: "))
+    return ax
