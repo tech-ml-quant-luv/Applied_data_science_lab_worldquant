@@ -2,36 +2,31 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "2c1f5e6a",
-   "metadata": {
-    "editable": true,
-    "slideshow": {
-     "slide_type": ""
-    },
-    "tags": []
-   },
+   "id": "ab19b46d-cafc-493e-8df2-031d35c9c87e",
+   "metadata": {},
    "source": [
-    "<font size=\"+3\"><strong>2.2. Predicting Price with Location</strong></font>"
+    "<font size=\"+3\"><strong>2.4. Predicting Price with Size, Location, and Neighborhood</strong></font>"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ebbc5e2f",
+   "id": "b94149a4-ef1d-4d8e-9944-6b77e16d14d5",
    "metadata": {},
    "outputs": [],
    "source": [
     "import warnings\n",
+    "from glob import glob\n",
     "\n",
-    "import numpy as np\n",
     "import pandas as pd\n",
-    "import plotly.express as px\n",
-    "import plotly.graph_objects as go\n",
+    "import seaborn as sns\n",
+    "from category_encoders import OneHotEncoder\n",
     "from IPython.display import VimeoVideo\n",
+    "from ipywidgets import Dropdown, FloatSlider, IntSlider, interact\n",
     "from sklearn.impute import SimpleImputer\n",
-    "from sklearn.linear_model import LinearRegression\n",
+    "from sklearn.linear_model import LinearRegression, Ridge  # noqa F401\n",
     "from sklearn.metrics import mean_absolute_error\n",
-    "from sklearn.pipeline import Pipeline, make_pipeline\n",
+    "from sklearn.pipeline import make_pipeline\n",
     "from sklearn.utils.validation import check_is_fitted\n",
     "\n",
     "warnings.simplefilter(action=\"ignore\", category=FutureWarning)"
@@ -39,25 +34,25 @@
   },
   {
    "cell_type": "markdown",
-   "id": "36ebb5a1",
+   "id": "12a1b3a7-176b-44f4-bc4f-152cc5c0269f",
    "metadata": {},
    "source": [
-    "In this lesson, we're going to build on the work we did in the previous lesson. We're going to create a more complex `wrangle` function, use it to clean more data, and build a model that considers more features when predicting apartment price. "
+    "In the final lesson for this project, we're going to try to use all the features in our dataset to improve our model. This means that we'll have to do a more careful cleaning of the dataset and consider some of the finer points of linear models."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ab9446d4",
+   "id": "9ff841a2-81e0-4957-aa20-2543ca95bd40",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656752925\", h=\"701f3f4081\", width=600)"
+    "VimeoVideo(\"656842813\", h=\"07f074324e\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "8ab96988",
+   "id": "12b61388-a56c-4df6-9c49-b686191eca32",
    "metadata": {},
    "source": [
     "# Prepare Data"
@@ -65,7 +60,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "1dadcfc8",
+   "id": "cfe3e8ee-a48a-476a-875c-f949093fff36",
    "metadata": {},
    "source": [
     "## Import"
@@ -74,8 +69,10 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "da8aef4c",
-   "metadata": {},
+   "id": "495cc0ba-da04-47cd-962a-1250d1ce267f",
+   "metadata": {
+    "tags": []
+   },
    "outputs": [],
    "source": [
     "def wrangle(filepath):\n",
@@ -93,167 +90,153 @@
     "    mask_area = df[\"surface_covered_in_m2\"].between(low, high)\n",
     "    df = df[mask_area]\n",
     "\n",
-    "    \n",
+    "    # Split \"lat-lon\" column\n",
+    "    df[[\"lat\", \"lon\"]] = df[\"lat-lon\"].str.split(\",\", expand=True).astype(float)\n",
+    "    df.drop(columns=\"lat-lon\", inplace=True)\n",
     "\n",
+    "    # Get place name\n",
+    "    df[\"neighborhood\"] = df[\"place_with_parent_names\"].str.split(\"|\", expand=True)[3]\n",
+    "    df.drop(columns=\"place_with_parent_names\", inplace=True)\n",
+    "\n",
+    "   \n",
     "    return df"
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "89674da6",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656752771\", h=\"3a42896eb6\", width=600)"
-   ]
-  },
-  {
    "cell_type": "markdown",
-   "id": "5947804c",
+   "id": "e571ea26-15d0-4c89-b927-616c344fc6bb",
    "metadata": {},
    "source": [
-    "**Task 2.2.1:** Use your `wrangle` function to create a DataFrame `frame1` from the CSV file `data/buenos-aires-real-estate-1.csv`."
+    "Let's begin by using what we've learned to load all our CSV files into a DataFrame. "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ba96e97c",
+   "id": "59193ce1-3082-4ce5-a3de-f59b3eb7d7ea",
    "metadata": {},
    "outputs": [],
    "source": [
-    "frame1 = ...\n",
-    "print(frame1.info())\n",
-    "frame1.head()"
+    "VimeoVideo(\"656842538\", h=\"bd85634eb1\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "bdedc59c",
+   "id": "899f12bf-071c-441c-b875-6afd1d395adb",
    "metadata": {},
    "source": [
-    "For our model, we're going to consider apartment location, specifically, latitude and longitude. Looking at the output from `frame1.info()`, we can see that the location information is in a single column where the data type is `object` (pandas term for `str` in this case). In order to build our model, we need latitude and longitude to each be in their own column where the data type is `float`. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "1b81c133",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656751955\", h=\"e47002428d\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "92b5723e",
-   "metadata": {},
-   "source": [
-    "**Task 2.2.2:** Add to the `wrangle` function above so that, in the DataFrame it returns, the `\"lat-lon\"` column is replaced by separate `\"lat\"` and `\"lon\"` columns. Don't forget to also drop the `\"lat-lon\"` column. Be sure to rerun all the cells above before you continue.\n",
+    "**Task 2.4.1:** Use [`glob`](https://docs.python.org/3/library/glob.html#glob.glob) to create a list that contains the filenames for all the Buenos Aires real estate CSV files in the `data` directory. Assign this list to the variable name `files`.\n",
     "\n",
-    "- [What's a function?](../%40textbook/02-python-advanced.ipynb#Functions)\n",
-    "- [Split the strings in one column to create another using pandas.](../%40textbook/03-pandas-getting-started.ipynb#Splitting-Strings)\n",
-    "- [Drop a column from a DataFrame using pandas.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)"
+    "- [<span id='technique'>Assemble a list of path names that match a pattern in <span id='tool'>glob.](../%40textbook/02-python-advanced.ipynb#Working-with-strings-)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "1131d77d",
+   "id": "2bd68035-3850-4588-866a-27559a742843",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "files = ...\n",
+    "files"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1a9619fa-cca6-4099-aab4-34a16b8b2a2e",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Check your work\n",
-    "assert (\n",
-    "    frame1.shape[0] == 1343\n",
-    "), f\"`frame1` should have 1343 rows, not {frame1.shape[0]}.\"\n",
-    "assert frame1.shape[1] == 17, f\"`frame1` should have 17 columns, not {frame1.shape[1]}.\""
+    "assert len(files) == 5, f\"`files` should contain 5 items, not {len(files)}\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "50234bc2",
+   "id": "4344e6a8-829a-4772-b427-08c3e3790b68",
    "metadata": {},
    "source": [
-    "Now that our `wrangle` function is working, let's use it to clean more data!"
+    "The last time we put all our DataFrames into a list, we used a `for` loop. This time, we're going to use a more compact coding technique called a **list comprehension**.  "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "8c534b33",
+   "id": "78dd3e94-4c10-4d83-b3a7-83d261a4d10d",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656751853\", h=\"da40b0a474\", width=600)"
+    "VimeoVideo(\"656842076\", h=\"0f654d427f\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "a7d1556a",
+   "id": "28af17cc-b978-4ef5-a0c6-c4befdbd45d1",
    "metadata": {},
    "source": [
-    "**Task 2.2.3:** Use you revised `wrangle` function create a DataFrames `frame2` from the file `data/buenos-aires-real-estate-2.csv`."
+    "**Task 2.4.2:** Use your `wrangle` function in a list comprehension to create a list named `frames`. The list should contain the cleaned DataFrames for the filenames your collected in `files`.\n",
+    "\n",
+    "- [What's a list comprehension?](../%40textbook/02-python-advanced.ipynb#List-Comprehension-)\n",
+    "- [Write a list comprehension in Python](../%40textbook/02-python-advanced.ipynb#List-Comprehension-)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "eec2e7e8",
+   "id": "c6c53d59-4c6e-4e39-95c9-4199aab4727c",
    "metadata": {},
    "outputs": [],
    "source": [
-    "frame2 = ..."
+    "frames = ..."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "123ec824",
+   "id": "a378c42a-22e9-4220-9636-8a605d63e75b",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Check your work\n",
-    "assert (\n",
-    "    frame2.shape[0] == 1315\n",
-    "), f\"`frame1` should have 1315 rows, not {frame2.shape[0]}.\"\n",
-    "assert frame2.shape[1] == 17, f\"`frame1` should have 17 columns, not {frame2.shape[1]}.\""
+    "assert len(frames) == 5, f\"`frames` should contain 5 items, not {len(frames)}\"\n",
+    "assert all(\n",
+    "    [isinstance(frame, pd.DataFrame) for frame in frames]\n",
+    "), \"The items in `frames` should all be DataFrames.\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "e6ae52c4",
+   "id": "1c609224-3ddb-4466-bcf0-973ebe2220f1",
    "metadata": {},
    "source": [
-    "As you can see, using a function is much quicker than cleaning each file individually like we did in the last project. Let's combine our DataFrames so we can use then to train our model."
+    "Last step: Combine the DataFrames in `frames` into a single `df`."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "bb2fbfff",
+   "id": "b2eef02e-3eb6-4eba-ac18-47415c0beaa7",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656751405\", h=\"d1f95ab108\", width=600)"
+    "VimeoVideo(\"656841910\", h=\"79c7dbc5ab\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "f8be210b",
+   "id": "a40daf52-7d3c-4d6f-bf23-cd135c4ab7eb",
    "metadata": {},
    "source": [
-    "**Task 2.2.4:** Use [`pd.concat`](https://pandas.pydata.org/docs/reference/api/pandas.concat.html) to concatenate `frame1` and `frame2` into a new DataFrame `df`. Make sure you set the `ignore_index` argument to `True`.\n",
+    "**Task 2.4.3:** Use [`pd.concat`](https://pandas.pydata.org/docs/reference/api/pandas.concat.html) to concatenate it items in `frames` into a single DataFrame `df`. Make sure you set the `ignore_index` argument to `True`.\n",
     "\n",
-    "- [Concatenate two or more DataFrames using pandas.](../%40textbook/03-pandas-getting-started.ipynb#Concatenating)"
+    "- [<span id='technique'>Concatenate two or more DataFrames using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Concatenating)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "391410ad",
+   "id": "c51a7060-c8bb-4577-b2d0-26e5764afdad",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -265,17 +248,18 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "656b1ee2",
+   "id": "b1554bd1-df77-44a5-a828-79a5fe603a98",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Check your work\n",
-    "assert df.shape == (2658, 17), f\"`df` is the wrong size: {df.shape}\""
+    "assert len(df) == 6582, f\"`df` has the wrong number of rows: {len(df)}\"\n",
+    "assert df.shape[1] <= 17, f\"`df` has too many columns: {df.shape[1]}\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "a2de7ffa",
+   "id": "64aef750-2f49-48eb-b630-8a5493d27657",
    "metadata": {},
    "source": [
     "## Explore"
@@ -283,217 +267,286 @@
   },
   {
    "cell_type": "markdown",
-   "id": "0baad70b",
+   "id": "7aa1d5dd-e920-436f-af81-8e98a16e0c16",
    "metadata": {},
    "source": [
-    "In the last lesson, we built a simple linear model that predicted apartment price based on one feature, `\"surface_covered_in_m2\"`. In this lesson, we're building a multiple linear regression model that predicts price based on two features, `\"lon\"` and `\"lat\"`. This means that our data visualizations now have to communicate three pieces of information: Longitude, latitude, and price. How can we represent these three attributes on a two-dimensional screen?\n",
+    "The first thing we need to consider when trying to use all the features `df` is **missing values**. While it's true you can impute missing values, there still needs to be enough data in a column to do a good imputation. A general rule is that, if more than half of the data in a column is missing, it's better to drop it then try imputing.\n",
     "\n",
-    "One option is to incorporate color into our scatter plot. For example, in the Mapbox scatter plot below, the location of each point represents latitude and longitude, and color represents price. "
+    "Take a look at the output from `df.info()` above. Are there columns where more than half of the values are `NaN`? If so, those columns need to go! "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "cd139581",
+   "id": "3b890d69-0081-4058-b314-eefb9568f813",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656751031\", h=\"367be02e14\", width=600)"
+    "VimeoVideo(\"656848648\", h=\"6964fa0c8c\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "036de5c3",
+   "id": "75a65e92-e6ce-4244-9a84-48c882cc03b7",
    "metadata": {},
    "source": [
-    "**Task 2.2.5:** Complete the code below to create a [Mapbox scatter plot](https://plotly.github.io/plotly.py-docs/generated/plotly.express.scatter_mapbox.html) that shows the location of the apartments in `df`. \n",
+    "**Task 2.4.4:** Modify your `wrangle` function to drop any columns that are more than half `NaN` values. Be sure to rerun all the cells above before you continue.\n",
     "\n",
-    "- [What's a scatter plot?](../%40textbook/06-visualization-matplotlib.ipynb#Scatter-Plots)\n",
-    "- [Create a Mapbox scatter plot in plotly express.](../%40textbook/08-visualization-plotly.ipynb#Mapbox-Scatter-Plots) "
+    "- [<span id='technique'>Inspect a DataFrame using the `shape`, `info`, and `head` in <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Inspecting-DataFrames)\n",
+    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "6a2fb75c",
+   "id": "f71bd6c5-dfcf-4873-9ed6-5cb6de2ddb36",
    "metadata": {},
    "outputs": [],
    "source": [
-    "fig = px.scatter_mapbox(\n",
-    "    df,  # Our DataFrame\n",
-    "    lat= ...\n",
-    "    lon= ...\n",
-    "    width=600,  # Width of map\n",
-    "    height=600,  # Height of map\n",
-    "    color= ...\n",
-    "    hover_data=[\"price_aprox_usd\"],  # Display price when hovering mouse over house\n",
-    ")\n",
-    "\n",
-    "fig.update_layout(mapbox_style=\"open-street-map\")\n",
-    "\n",
-    "fig.show()"
+    "# Check your work\n",
+    "assert len(df) == 6582, f\"`df` has the wrong number of rows: {len(df)}\"\n",
+    "assert df.shape[1] <= 15, f\"`df` has too many columns: {df.shape[1]}\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "446c8cee",
+   "id": "a851cba3-dc83-4bef-920c-8798e1b7bd67",
    "metadata": {},
    "source": [
-    "Another option is to add a third dimension to our scatter plot. We can plot longitude on the x-axis and latitude on the y-axis (like we do in the map above), and then add a z-axis with price. "
+    "The next thing we need to look out for are categorical columns with **low or high cardinality**. If there's only one category in a column, it won't provide any unique information to our model. At the other extreme, columns where nearly every row has its own category won't help our model in identifying useful trends in the data.\n",
+    "\n",
+    "Let's take a look at the cardinality of our features."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9d45ccbc",
+   "id": "9df45e0e-1439-43c3-a4f5-31199c7be841",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656750669\", h=\"574287f687\", width=600)"
+    "VimeoVideo(\"656848196\", h=\"37dbc44b09\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "691018da",
+   "id": "f158dab2-f770-4a8c-b5cf-6eef6d28078b",
    "metadata": {},
    "source": [
-    "**Task 2.2.6:** Complete the code below to create a 3D scatter plot, with `\"lon\"` on the x-axis, `\"lat\"` on the y-axis, and `\"price_aprox_usd\"` on the z-axis.\n",
+    "**Task 2.4.5:** Calculate the number of unique values for each non-numeric feature in `df`.\n",
     "\n",
-    "- [What's a scatter plot?](../%40textbook/06-visualization-matplotlib.ipynb#Scatter-Plots)\n",
-    "- [Create a 3D scatter plot in plotly express.](../%40textbook/08-visualization-plotly.ipynb#3D-Scatter-Plots)"
+    "- [<span id='technique'>Subset a DataFrame's columns based on the column data types in <span id='tool'>pandas.](../%40textbook/04-pandas-advanced.ipynb#Subset-the-Columns-of-a-DataFrame-Based-on-Data-Types)\n",
+    "- [<span id='technique'>Calculate summary statistics for a DataFrame or Series in <span id='tool'>pandas.](../%40textbook/05-pandas-summary-statistics.ipynb#Working-with-Summary-Statistics)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "e461f3ae",
+   "id": "126a9693-68ca-4b66-ad9f-0be0350278a0",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Create 3D scatter plot\n",
-    "fig = px.scatter_3d(\n",
-    "    df,\n",
-    "    x= ...\n",
-    "    y= ...\n",
-    "    z= ...\n",
-    "    labels={\"lon\": \"longitude\", \"lat\": \"latitude\", \"price_aprox_usd\": \"price\"},\n",
-    "    width=600,\n",
-    "    height=500,\n",
-    ")\n",
-    "\n",
-    "# Refine formatting\n",
-    "fig.update_traces(\n",
-    "    marker={\"size\": 4, \"line\": {\"width\": 2, \"color\": \"DarkSlateGrey\"}},\n",
-    "    selector={\"mode\": \"markers\"},\n",
-    ")\n",
-    "\n",
-    "# Display figure\n",
-    "fig.show()"
+    "..."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "628c941c",
+   "id": "9ed59ede-f1a8-4f65-b2ed-dbdcfdc2f6ec",
    "metadata": {},
    "source": [
-    "<div class=\"alert alert-block alert-info\">\n",
-    "<b>Tip:</b> 3D visualizations are often harder for someone to interpret than 2D visualizations. We're using one here because it will help us visualize our model once it's built, but as a rule, it's better to stick with 2D when your communicating with an audience.\n",
-    "</div>\n",
-    "\n",
-    "In the last lesson, we represented our simple model as a line imposed on a 2D scatter plot.\n",
-    "\n",
-    "<center><img src=\"../images/proj-2.002.png\" alt=\"Scatter plot of price versus area with line plot\"/></center>\n",
-    "\n",
-    "How do you think we'll represent our multiple linear regression model in the 3D plot we just made?"
+    "Here, we can see that columns like `\"operation\"` have only one value in them, while every row in `\"properati_url\"` has a unique value. These are clear examples of high- and low-cardinality features that we shouldn't include in our model."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "7254f5c2",
+   "id": "c9d05d63-e8bc-4c52-9f45-b1b171e4684c",
+   "metadata": {},
+   "source": [
+    "**Task 2.4.6:** Modify your `wrangle` function to drop high- and low-cardinality categorical features.\n",
+    "\n",
+    "Be sure to rerun all the cells above before you continue.\n",
+    "\n",
+    "- [What are <span id='term'>high- and low-cardinality features?](../%40textbook/14-ml-classification.ipynb#High-cardinality-Features)\n",
+    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cdefdec8-1b7a-478b-9f31-bc7fbefda39f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert len(df) == 6582, f\"`df` has the wrong number of rows: {len(df)}\"\n",
+    "assert df.shape[1] <= 11, f\"`df` has too many columns: {df.shape[1]}\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "dfea2ecf-cd5d-4411-85c0-74653c29c768",
+   "metadata": {},
+   "source": [
+    "It's also important for us to drop any columns that would constitute **leakage**, that is, features that were created using our target or that would give our model information that it won't have access to when it's deployed. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "17b25ed0-94ab-4303-88dd-175657110a1a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"656847896\", h=\"11de775937\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0b507b4b-e5d2-4623-a90b-944d2dc2b5a2",
+   "metadata": {},
+   "source": [
+    "**Task 2.4.7:** Modify your `wrangle` function to drop any features that would constitute leakage. \n",
+    "\n",
+    "Be sure to rerun all the cells above before you continue.\n",
+    "\n",
+    "- [What's <span id='term'>leakage?](../%40textbook/12-ml-core.ipynb#Leakage)\n",
+    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "97df9915-c69b-4539-b8dd-8f4abf8b7d57",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert len(df) == 6582, f\"`df` has the wrong number of rows: {len(df)}\"\n",
+    "assert df.shape[1] <= 7, f\"`df` has too many columns: {df.shape[1]}\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b12772ba-f7d4-4ad4-9d2a-9f40bede484b",
+   "metadata": {},
+   "source": [
+    "Finally, the last issue we need to keep an eye out for is **multicollinearity**, that is, features in our feature matrix that are highly correlated with each other. A good way to detect this is to use a heatmap. Let's make one!"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0235152e-2023-42fc-8a8d-2f6accc87c28",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"656847237\", h=\"4b5cfed5d6\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "61ecf52e-c6d5-46c3-b8b3-8eac1ef5e77e",
+   "metadata": {},
+   "source": [
+    "**Task 2.4.8:** Plot a correlation heatmap of the remaining numerical features in `df`. Since `\"price_aprox_usd\"` will be your target, you don't need to include it in your heatmap.\n",
+    "\n",
+    "- [What's a <span id='term'>heatmap?](../%40textbook/09-visualization-seaborn.ipynb#Correlation-Heatmaps)\n",
+    "- [<span id='technique'>Create a correlation matrix in <span id='tool'>pandas.](../%40textbook/07-visualization-pandas.ipynb#Correlation-Matrices)\n",
+    "- [<span id='technique'>Create a heatmap in <span id='tool'>seaborn.](../%40textbook/09-visualization-seaborn.ipynb#Correlation-Heatmaps)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e9744cd1-4bed-4e77-9619-45a03ba38036",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "corr = ...\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c36d9ba4-55cd-40b4-8119-8b1df638f225",
+   "metadata": {},
+   "source": [
+    "**Task 2.4.9:** Modify your `wrangle` function to remove columns so that there are no strongly correlated features in your feature matrix.\n",
+    "\n",
+    "Be sure to rerun all the cells above before you continue.\n",
+    "\n",
+    "- [What's <span id='term'>multicollinearity?](../%40textbook/15-ml-regression.ipynb#Multicollinearity)\n",
+    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5fc962e9-f8b2-4c47-963e-dda379d8bd91",
    "metadata": {
-    "tags": []
+    "scrolled": true
    },
-   "source": [
-    "## Split"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "02f9df98",
-   "metadata": {},
-   "source": [
-    "Even though we're building a different model, the steps we follow will be the same. Let's separate our features (latitude and longitude) from our target (price). "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6360ce00",
-   "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656750457\", h=\"09f5fe3962\", width=600)"
+    "# Check your work\n",
+    "assert len(df) == 6582, f\"`df` has the wrong number of rows: {len(df)}\"\n",
+    "assert df.shape[1] == 5, f\"`df` has the wrong number of columns: {df.shape[1]}\"\n",
+    "df.head()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "f60c1477",
+   "id": "4be0a821-d396-4285-9aa5-467c13189f27",
    "metadata": {},
    "source": [
-    "**Task 2.2.7:** Create the feature matrix named `X_train`. It should contain two features: `[\"lon\", \"lat\"]`. \n",
+    "Done! It looks like we're going to use the four features we've used in our previous models but, this time, we're going to combine them. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "46ccc3e0-a683-447d-a203-23ee3fbf5a30",
+   "metadata": {},
+   "source": [
+    "## Split Data"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5fa837b0-c8f4-42ca-89de-2838782897c6",
+   "metadata": {},
+   "source": [
+    "**Task 2.4.10:** Create your feature matrix `X_train` and target vector `y_train`. Your target is `\"price_aprox_usd\"`. Your features should be all the columns that remain in the DataFrame you cleaned above.\n",
     "\n",
-    "- [What's a feature matrix?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
-    "- [Subset a DataFrame by selecting one or more columns in pandas.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns) "
+    "- [What's a <span id='term'>feature matrix?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
+    "- [What's a <span id='term'>target vector?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
+    "- [<span id='technique'>Subset a DataFrame by selecting one or more columns in <span id='tool'>pandas.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns) \n",
+    "- [<span id='technique'>Select a Series from a DataFrame in <span id='tool'>pandas.](../%40textbook/04-pandas-advanced.ipynb#Select-a-Series-from-a-DataFrame) "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "574a047a",
+   "id": "e02aea54-1bed-4a65-93c5-cee2cb4b4e11",
    "metadata": {},
    "outputs": [],
    "source": [
-    "features = [\"lon\", \"lat\"]\n",
-    "X_train = ...\n",
-    "X_train.head()"
+    "target = \"price_aprox_usd\"\n"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "7488b617",
+   "id": "b2e6879e-f3e3-42dc-8848-495f293876e0",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656750323\", h=\"1a82090b9b\", width=600)"
+    "# Check your work\n",
+    "assert X_train.shape == (6582, 4), f\"`X_train` is the wrong size: {X_train.shape}.\"\n",
+    "assert y_train.shape == (6582,), f\"`y_train` is the wrong size: {y_train.shape}.\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "b193dc45",
-   "metadata": {},
-   "source": [
-    "**Task 2.2.8:** Create the target vector named `y_train`, which you'll use to train your model. Your target should be `\"price_aprox_usd\"`. Remember that, in most cases, your target vector should be one-dimensional. \n",
-    "\n",
-    "- [What's a target vector?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
-    "- [Select a Series from a DataFrame in pandas.](../%40textbook/04-pandas-advanced.ipynb#Select-a-Series-from-a-DataFrame) "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a2835ecf",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "target = \"price_aprox_usd\"\n",
-    "y_train = ...\n",
-    "y_train.head()"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "bfb38082",
+   "id": "e2a17917-9b80-4d4a-918a-740c6ce756d4",
    "metadata": {},
    "source": [
     "# Build Model"
@@ -501,110 +554,47 @@
   },
   {
    "cell_type": "markdown",
-   "id": "33b1871f",
-   "metadata": {
-    "tags": []
-   },
+   "id": "456676b7-2052-42fc-97e8-71cf4ca28a33",
+   "metadata": {},
    "source": [
     "## Baseline"
    ]
   },
   {
-   "cell_type": "markdown",
-   "id": "37051b99",
-   "metadata": {},
-   "source": [
-    "Again, we need to set a baseline so we can evaluate our model's performance. You'll notice that the value of `y_mean` is not exactly the same as it was in the previous lesson. That's because we've added more observations to our training data."
-   ]
-  },
-  {
    "cell_type": "code",
    "execution_count": null,
-   "id": "abe9e928",
+   "id": "9794d308-d947-4118-b3e9-3fb15ac3c4e3",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656750112\", h=\"1ef669fe2b\", width=600)"
+    "VimeoVideo(\"656849559\", h=\"bca444c8af\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "e029d5e2",
+   "id": "5eb7cf54-4286-4c31-9541-31ca2b361ddf",
    "metadata": {},
    "source": [
-    "**Task 2.2.9:** Calculate the mean of your target vector `y_train` and assign it to the variable `y_mean`.\n",
+    "**Task 2.4.11:** Calculate the baseline mean absolute error for your model.\n",
     "\n",
-    "- [Calculate summary statistics for a DataFrame or Series in pandas.](../%40textbook/05-pandas-summary-statistics.ipynb#Working-with-Summary-Statistics)"
+    "- [<span id='technique'>Calculate summary statistics for a DataFrame or Series in <span id='tool'>pandas.](../%40textbook/05-pandas-summary-statistics.ipynb#Working-with-Summary-Statistics)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "33d4a474",
+   "id": "6c6c57a4-b57c-46f2-b3dd-b8f94a0eff3f",
    "metadata": {},
    "outputs": [],
    "source": [
-    "y_mean = ..."
+    "print(\"Mean apt price:\", ...)\n",
+    "\n",
+    "print(\"Baseline MAE:\", ...)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "444dd23d",
-   "metadata": {},
-   "source": [
-    "**Task 2.2.10:** Create a list named `y_pred_baseline` that contains the value of `y_mean` repeated so that it's the same length at `y_train`.\n",
-    "\n",
-    "- [Calculate the length of a list in Python.](../%40textbook/02-python-advanced.ipynb#Functions)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "b2cb0189",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "y_pred_baseline = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "85cefa32",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656749994\", h=\"50c71bf4e5\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "7352a5be",
-   "metadata": {},
-   "source": [
-    "**Task 2.2.11:** Calculate the baseline mean absolute error for your predictions in `y_pred_baseline` as compared to the true targets in `y_train`.\n",
-    "\n",
-    "- [What's a performance metric?](../%40textbook/12-ml-core.ipynb#Performance-Metrics)\n",
-    "- [What's mean absolute error?](../%40textbook/12-ml-core.ipynb#Performance-Metrics)\n",
-    "- [Calculate the mean absolute error for a list of predictions in scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "295a930a",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "mae_baseline = ...\n",
-    "\n",
-    "print(\"Mean apt price\", round(y_mean, 2))\n",
-    "print(\"Baseline MAE:\", round(mae_baseline, 2))"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "264532d9",
+   "id": "bd824723-342c-4efd-a5bd-50795c01b64f",
    "metadata": {},
    "source": [
     "## Iterate"
@@ -612,401 +602,107 @@
   },
   {
    "cell_type": "markdown",
-   "id": "108663dd",
+   "id": "337e1a13-a4d7-4f27-8337-8b481ed99262",
    "metadata": {},
    "source": [
-    "Take a moment to scroll up to the output for `df.info()` and look at the values in the `\"Non-Null Count\"` column. Because of the math it uses, a linear regression model can't handle observations where there are missing values. Do you see any columns where this will be a problem?\n",
+    "**Task 2.4.12:** Create a pipeline named `model` that contains a `OneHotEncoder`, `SimpleImputer`, and `Ridge` predictor.\n",
     "\n",
-    "In the last project, we simply dropped rows that contained `NaN` values, but this isn't ideal. Models generally perform better when they have more data to train with, so every row is precious. Instead, we can fill in these missing values using information we get from the whole column — a process called **imputation**. There are many different strategies for imputing missing values, and one of the most common is filling in the missing values with the mean of the column.\n",
-    "\n",
-    "In addition to **predictors** like `LinearRegression`, scikit-learn also has **transformers** that help us deal with issues like missing values. Let's see how one works, and then we'll add it to our model."
+    "- [What's <span id='term'>imputation?](../%40textbook/12-ml-core.ipynb#Imputation) \n",
+    "- [What's <span id='term'>one-hot encoding?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)\n",
+    "- [What's a <span id='term'>pipeline?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#scikit-learn-in-Production)\n",
+    "- [<span id='technique'>Create a pipeline in <span id='tool'>scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Creating-a-Pipeline-in-scikit-learn)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "895170b2",
+   "id": "75912927-56e1-41d5-af75-b698b4bcdf7e",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656748776\", h=\"014f943c46\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "7282fe2e",
-   "metadata": {},
-   "source": [
-    "**Task 2.2.12:** Instantiate a [`SimpleImputer`](https://scikit-learn.org/stable/modules/generated/sklearn.impute.SimpleImputer.html) named `imputer`.\n",
-    "\n",
-    "- [What's imputation?](../%40textbook/12-ml-core.ipynb#Imputation) \n",
-    "- [Instantiate a transformer in scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)"
+    "model = ...\n"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "fe765c6f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "imputer = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "26c89631",
+   "id": "c9f95b60-073e-4ad0-9c06-684cdb78e5ae",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Check your work\n",
-    "assert isinstance(imputer, SimpleImputer)"
+    "check_is_fitted(model[-1])"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "dcff7e6b",
-   "metadata": {},
-   "source": [
-    "Just like a predictor, a transformer has a `fit` method. In the case of our `SimpleImputer`, this is the step where it calculates the mean values for each numerical column. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "7b19eb26",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656748659\", h=\"fdaa8d0329\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "8545a724",
-   "metadata": {},
-   "source": [
-    "**Task 2.2.13:** Fit your transformer `imputer` to the feature matrix `X`.\n",
-    "\n",
-    "- [Fit a transformer to training data in scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "479b64e2",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "3402ece3",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "check_is_fitted(imputer)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "1fcfcecc",
-   "metadata": {},
-   "source": [
-    "Here's where transformers diverge from predictors. Instead of using a method like `predict`, we use the `transform` method. This is the step where the transformer fills in the missing values with the means it's calculated. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "150b2395",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656748527\", h=\"d76e63760c\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "29c6bc75",
-   "metadata": {},
-   "source": [
-    "**Task 2.2.14:** Use your `imputer` to transform the feature matrix `X_train`. Assign the transformed data to the variable `XT_train`.\n",
-    "\n",
-    "- [Transform data using a transformer in scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "3b6fb388",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "XT_train = ...\n",
-    "pd.DataFrame(XT_train, columns=X_train.columns).info()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a526658f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert XT_train.shape == (2658, 2), f\"`XT_train` is the wrong shape: {XT_train.shape}\"\n",
-    "assert (\n",
-    "    np.isnan(XT_train).sum() == 0\n",
-    "), \"Your feature matrix still has `NaN` values. Did you forget to transform is using `imputer`?\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "ea801d8f",
-   "metadata": {},
-   "source": [
-    "Okay! Our data is free of missing values, and we have a good sense for how predictors work in scikit-learn. However, the truth is you'll rarely do data transformations this way. Why? A model may require multiple transformers, and doing all those transformations one-by-one is slow and likely to lead to errors. 🤦‍♀️ Instead, we can combine our transformer and predictor into a single object called a `pipeline`. <span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "400f9484",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656748360\", h=\"50b4643a26\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "71b2f466",
-   "metadata": {},
-   "source": [
-    "**Task 2.2.15:** Create a pipeline named `model` that contains a `SimpleImputer` transformer followed by a `LinearRegression` predictor.\n",
-    "\n",
-    "- [What's a pipeline?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Creating-a-Pipeline-in-scikit-learn)\n",
-    "- [Create a pipeline in scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Creating-a-Pipeline-in-scikit-learn)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "72b3b369",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "model = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "fcb88d39",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "assert isinstance(model, Pipeline), \"Did you instantiate your model?\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "c1794e5a",
-   "metadata": {},
-   "source": [
-    "With our pipeline assembled, we use the `fit` method, which will train the transformer, transform the data, then pass the transformed data to the predictor for training, all in one step. Much easier!"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a4677d47",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656748234\", h=\"59ba7958d5\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "68495da8",
-   "metadata": {},
-   "source": [
-    "**Task 2.2.16:** Fit your model to the data, `X_train` and `y_train`.\n",
-    "\n",
-    "- [Fit a model to training data in scikit-learn.](../%40textbook/15-ml-regression.ipynb#Fitting-a-Model-to-Training-Data)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9344a112",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "2e03d1ac",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "check_is_fitted(model[\"linearregression\"])"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "11996397",
-   "metadata": {},
-   "source": [
-    "Success! Let's see how our trained model performs. "
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "d332a73f",
+   "id": "5c533be3-e8e6-4af6-aafa-29fad3a35e5a",
    "metadata": {},
    "source": [
     "## Evaluate"
    ]
   },
   {
-   "cell_type": "markdown",
-   "id": "71316ba0",
-   "metadata": {},
-   "source": [
-    "As always, we'll start by evaluating our model's performance on the training data. "
-   ]
-  },
-  {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3049e0f8",
+   "id": "33db8361-45a8-4e19-88f4-61c6f61039e3",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656748155\", h=\"5672ef44cb\", width=600)"
+    "VimeoVideo(\"656849505\", h=\"f153a4f005\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "edfbb803",
+   "id": "6217628b-a87e-4f06-9957-cfcef7930765",
    "metadata": {},
    "source": [
-    "**Task 2.2.17:** Using your model's [`predict`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression.predict) method, create a list of predictions for the observations in your feature matrix `X_train`. Name this list `y_pred_training`. \n",
+    "**Task 2.4.13:** Calculate the training mean absolute error for your predictions as compared to the true targets in `y_train`.\n",
     "\n",
-    "- [Generate predictions using a trained model in scikit-learn.](../%40textbook/15-ml-regression.ipynb#Generating-Predictions-Using-a-Trained-Model)"
+    "- [<span id='technique'>Generate predictions using a trained model in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Generating-Predictions-Using-a-Trained-Model)\n",
+    "- [<span id='technique'>Calculate the mean absolute error for a list of predictions in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0773270a",
+   "id": "17c3911b-153a-467a-abb5-74e774922405",
    "metadata": {},
    "outputs": [],
    "source": [
-    "y_pred_training = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "399a3cd5",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert y_pred_training.shape == (2658,)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "148ce1a8",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656748205\", h=\"13144556a6\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "a67d415c",
-   "metadata": {},
-   "source": [
-    "**Task 2.2.18:** Calculate the training mean absolute error for your predictions in `y_pred_training` as compared to the true targets in `y_train`.\n",
     "\n",
-    "- [Calculate the mean absolute error for a list of predictions in scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "988616f1",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "mae_training = ...\n",
-    "print(\"Training MAE:\", round(mae_training, 2))"
+    "print(\"Training MAE:\", ...)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "40a28d75",
-   "metadata": {},
-   "source": [
-    "It looks like our model performs a little better than the baseline. This suggests that latitude and longitude aren't as strong predictors of price as size is. \n",
-    "\n",
-    "Now let's check our test performance. Remember, once we test our model, there's no more iteration allowed. "
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "321ac956",
+   "id": "14d9174f-425d-42d0-808b-9ebe9737f8a3",
    "metadata": {
     "tags": []
    },
    "source": [
-    "**Task 2.2.19:** Run the code below to import your test data `buenos-aires-test-features.csv` into a DataFrame and generate a Series of predictions using your model.  After the code runs successfully, click on the **Check Activity** button on the left pane to verify your predictions.\n",
+    "**Task 2.4.14:** Run the code below to import your test data `buenos-aires-test-features.csv` into a DataFrame and generate a list of predictions using your model.  After the code runs successfully, click on the **Check Activity** button on the left pane to verify your predictions.\n",
     "\n",
     "- [What's generalizability?](../%40textbook/12-ml-core.ipynb#Generalization)\n",
-    "- [Generate predictions using a trained model in scikit-learn.](../%40textbook/15-ml-regression.ipynb#Generating-Predictions-Using-a-Trained-Model)\n",
-    "- [Calculate the mean absolute error for a list of predictions in scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
+    "- [<span id='technique'>Generate predictions using a trained model in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Generating-Predictions-Using-a-Trained-Model)\n",
+    "- [<span id='technique'>Calculate the mean absolute error for a list of predictions in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b3e15e39",
+   "id": "4275949d-7dfa-4ffe-bf73-5eb5031637e3",
    "metadata": {},
    "outputs": [],
    "source": [
-    "X_test = pd.read_csv(\"data/buenos-aires-test-features.csv\")[features]\n",
+    "X_test = pd.read_csv(\"data/buenos-aires-test-features.csv\")\n",
     "y_pred_test = pd.Series(model.predict(X_test))\n",
     "y_pred_test.head()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "57194ee0",
-   "metadata": {},
-   "source": [
-    "Again, we want our test performance to be about the same as our training performance, but it's OK if it's not quite as good. "
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "8c0b2ddc",
+   "id": "59f6150c-b760-464a-99b8-c653ab50bdbf",
    "metadata": {},
    "source": [
     "# Communicate Results"
@@ -1014,149 +710,132 @@
   },
   {
    "cell_type": "markdown",
-   "id": "8b85d23f",
+   "id": "a6ff9e0a-1241-4b8c-8478-76f46a37086f",
    "metadata": {},
    "source": [
-    "Let's take a look at the equation our model has come up with for predicting price based on latitude and longitude. We'll need to expand on our formula to account for both features. \n",
+    "For this lesson, we've relied on equations and visualizations for communication about our model. In many data science projects, however, communication means giving stakeholders tools they can use to **deploy** a model — in other words, use it in action. So let's look at two ways you might deploy this model. \n",
     "\n",
-    "<center><img src=\"../images/proj-2.005.png\" alt=\"Equation: y = beta 0 + beta 1 * x\" style=\"width: 400px;\"/></center>"
+    "One thing you might be asked to do it wrap your model in a function so that a programmer can provide inputs and then receive a prediction as output. "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a9feb1f7",
+   "id": "1f4e9493-6957-42f5-abfd-641c703cd72f",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656747630\", h=\"b90db6b373\", width=600)"
+    "VimeoVideo(\"656849254\", h=\"e6faad47ca\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "7082c9fb",
+   "id": "d0d4a34c-cd9b-48a8-baa7-1d72de40cf6b",
    "metadata": {},
    "source": [
-    "**Task 2.2.20:** Extract the intercept and coefficients for your model. \n",
-    "\n",
-    "- [What's an intercept in a linear model?](../%40textbook/12-ml-core.ipynb#Model-Types)\n",
-    "- [What's a coefficient in a linear model?](../%40textbook/12-ml-core.ipynb#Model-Types)\n",
-    "- [Access an object in a pipeline in scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)"
+    "**Task 2.4.15:** Create a function `make_prediction` that takes four arguments (`area`, `lat`, `lon`, and `neighborhood`) and returns your model's prediction for an apartment price. "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "86fcc413",
+   "id": "2159b2dd-cb39-4b91-9694-0d67a5febddf",
    "metadata": {},
    "outputs": [],
    "source": [
-    "intercept = ...\n",
-    "coefficients = ..."
+    "def make_prediction(area, lat, lon, neighborhood):\n",
+    "    ...\n",
+    "    prediction = ...\n",
+    "    return f\"Predicted apartment price: ${prediction}\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "7a72777e",
+   "id": "c1320d31-9118-427a-9b97-9bf3a66bb3ce",
    "metadata": {},
    "source": [
-    "**Task 2.2.21:** Complete the code below and run the cell to print the equation that your model has determined for predicting apartment price based on latitude and longitude.\n",
-    "\n",
-    "- [What's an f-string?](../%40textbook/02-python-advanced.ipynb#Working-with-f-strings-)"
+    "Let's see if your function works. Run the cell below to find out!"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "aa9c77fc",
+   "id": "ad2ad590-acea-4faa-a460-6b9fcf18a859",
    "metadata": {},
    "outputs": [],
    "source": [
-    "print(\n",
-    "    f\"price = {} + ({} * longitude) + ({} * latitude)\"\n",
-    ")"
+    "make_prediction(110, -34.60, -58.46, \"Villa Crespo\")"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "e3892416",
+   "id": "218229fc-2b98-4b64-8ed9-9f71870e25c1",
    "metadata": {},
    "source": [
-    "What does this equation tell us? As you move north and east, the predicted apartment price increases. "
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "570f07a7",
-   "metadata": {},
-   "source": [
-    "At the start of the notebook, you thought about how we would represent our linear model in a 3D plot. If you guessed that we would use a plane, you're right!"
+    "Another type of deployment is creating and interactive dashboard, where a user can supply values and receive a prediction. Let's create one using [Jupyter Widgets](https://ipywidgets.readthedocs.io/en/latest/index.html).<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "79cea822",
+   "id": "b53ae98d-fc65-41a1-bfb2-5999e8d68311",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656746928\", h=\"71bfe94764\", width=600)"
+    "VimeoVideo(\"656848911\", h=\"7939dcd479\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "bb3e44f2",
+   "id": "532a9d70-8765-44ff-b272-d6d8aa08f5e6",
    "metadata": {},
    "source": [
-    "**Task 2.2.22:** Complete the code below to create a 3D scatter plot, with `\"lon\"` on the x-axis, `\"lat\"` on the y-axis, and `\"price_aprox_usd\"` on the z-axis.\n",
+    "**Task 2.4.16:** Add your `make_prediction` to the interact widget below, run the cell, and then adjust the widget to see how predicted apartment price changes. \n",
     "\n",
-    "- [What's a scatter plot?](../%40textbook/06-visualization-matplotlib.ipynb#Scatter-Plots)\n",
-    "- [Create a 3D scatter plot in plotly express.](../%40textbook/08-visualization-plotly.ipynb#3D-Scatter-Plots)"
+    "- Create an interact function in Jupyter Widgets."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "85998041",
+   "id": "c9a6ac26-8148-4f14-b990-510dac963505",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Create 3D scatter plot\n",
-    "fig = px.scatter_3d(\n",
-    "    df,\n",
-    "    x= ...\n",
-    "    y= ...\n",
-    "    z= ...\n",
-    "    labels={\"lon\": \"longitude\", \"lat\": \"latitude\", \"price_aprox_usd\": \"price\"},\n",
-    "    width=600,\n",
-    "    height=500,\n",
-    ")\n",
-    "\n",
-    "# Create x and y coordinates for model representation\n",
-    "x_plane = np.linspace(df[\"lon\"].min(), df[\"lon\"].max(), 10)\n",
-    "y_plane = np.linspace(df[\"lat\"].min(), df[\"lat\"].max(), 10)\n",
-    "xx, yy = np.meshgrid(x_plane, y_plane)\n",
-    "\n",
-    "# Use model to predict z coordinates\n",
-    "z_plane = model.predict(pd.DataFrame({\"lon\": x_plane, \"lat\": y_plane}))\n",
-    "zz = np.tile(z_plane, (10, 1))\n",
-    "\n",
-    "# Add plane to figure\n",
-    "fig.add_trace(go.Surface(x=xx, y=yy, z=zz))\n",
-    "\n",
-    "# Refine formatting\n",
-    "fig.update_traces(\n",
-    "    marker={\"size\": 4, \"line\": {\"width\": 2, \"color\": \"DarkSlateGrey\"}},\n",
-    "    selector={\"mode\": \"markers\"},\n",
-    ")\n",
-    "\n",
-    "# Display figure\n",
-    "fig.show()"
+    "interact(\n",
+    "    ...,\n",
+    "    area=IntSlider(\n",
+    "        min=X_train[\"surface_covered_in_m2\"].min(),\n",
+    "        max=X_train[\"surface_covered_in_m2\"].max(),\n",
+    "        value=X_train[\"surface_covered_in_m2\"].mean(),\n",
+    "    ),\n",
+    "    lat=FloatSlider(\n",
+    "        min=X_train[\"lat\"].min(),\n",
+    "        max=X_train[\"lat\"].max(),\n",
+    "        step=0.01,\n",
+    "        value=X_train[\"lat\"].mean(),\n",
+    "    ),\n",
+    "    lon=FloatSlider(\n",
+    "        min=X_train[\"lon\"].min(),\n",
+    "        max=X_train[\"lon\"].max(),\n",
+    "        step=0.01,\n",
+    "        value=X_train[\"lon\"].mean(),\n",
+    "    ),\n",
+    "    neighborhood=Dropdown(options=sorted(X_train[\"neighborhood\"].unique())),\n",
+    ");"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "5eb5c046",
+   "id": "7668b9fe-5d70-4409-9d08-8724ebd257db",
+   "metadata": {},
+   "source": [
+    "Great work! You may have noticed that there a lots of ways to improve this dashboard. For instance, a user can select a neighborhood and then supply latitude-longitude coordinates that aren't in that neighborhood. It would also be helpful to include a visualization like a map. Regardless, this is a great first step towards creating dynamic dashboards that turn your model from a complicated abstraction to a concrete tool that anyone can access. One of the most important parts of data science projects is creating products that people can use to make their work or lives easier. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b4006056",
    "metadata": {
     "deletable": false,
     "editable": false
@@ -1187,7 +866,11 @@
    "pygments_lexer": "ipython3",
    "version": "3.11.0"
   },
-  "toc-autonumbering": false,
+  "vscode": {
+   "interpreter": {
+    "hash": "1aa838312b528b31b4c7961d29e363799be244ea5d189daeb964016c6fd343fc"
+   }
+  },
   "widgets": {
    "application/vnd.jupyter.widget-state+json": {
     "state": {},
