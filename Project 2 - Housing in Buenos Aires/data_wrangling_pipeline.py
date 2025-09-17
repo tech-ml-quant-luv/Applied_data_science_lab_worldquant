@@ -16,7 +16,7 @@ def wrangle(filepath):
     df = df[df["price_aprox_usd"]<400_000] 
     
     #Remove outliers by "surface_covered_in_m2"
-    low,high=df["surface_covered_in_m2"].quantile([0.05,0.95])
+    low,high=df["surface_covered_in_m2"].quantile([0.1,0.9])
     df=df[df["surface_covered_in_m2"].between(low,high)]
     df[["lat","lon"]]=df["lat-lon"].str.split(",", expand=True).astype(float)
     df.drop(columns=["lat-lon"], inplace=True)
