@@ -19,7 +19,31 @@ def wrangle(filepath):
     low,high=df["surface_covered_in_m2"].quantile([0.1,0.9])
     df=df[df["surface_covered_in_m2"].between(low,high)]
     df[["lat","lon"]]=df["lat-lon"].str.split(",", expand=True).astype(float)
+
+    # Get place name
+    df["neighborhood"] = df["place_with_parent_names"].str.split("|", expand=True)[3]
+    df.drop(columns="place_with_parent_names", inplace=True)
+
     df.drop(columns=["lat-lon"], inplace=True)
+    # Drop features with high null counts
+    df.drop(columns=["floor", "expenses"], inplace=True)
+    # Drop low and high cardinality categorical variables
+    df.drop(columns=["operation","property_type","properati_url","currency"], inplace=True)
+
+    #Drop data leakage features
+    df.drop(columns=[
+        "price",
+        "price_aprox_local_currency",
+        "price_per_m2",
+        "price_usd_per_m2"
+        ] , inplace=True)
+
+    #Drop correlated features (columns with multicollinearity)
+    df.drop(columns=[
+        "surface_total_in_m2",
+        "rooms"
+    ], inplace=True)
+
     return df
 
 
