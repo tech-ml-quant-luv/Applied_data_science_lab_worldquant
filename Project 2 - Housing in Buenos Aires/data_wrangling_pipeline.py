@@ -19,12 +19,14 @@ def wrangle(filepath):
     low,high=df["surface_covered_in_m2"].quantile([0.1,0.9])
     df=df[df["surface_covered_in_m2"].between(low,high)]
     df[["lat","lon"]]=df["lat-lon"].str.split(",", expand=True).astype(float)
+    df.drop(columns=["lat-lon"], inplace=True)
+
 
     # Get place name
     df["neighborhood"] = df["place_with_parent_names"].str.split("|", expand=True)[3]
     df.drop(columns="place_with_parent_names", inplace=True)
 
-    df.drop(columns=["lat-lon"], inplace=True)
+    
     # Drop features with high null counts
     df.drop(columns=["floor", "expenses"], inplace=True)
     # Drop low and high cardinality categorical variables
