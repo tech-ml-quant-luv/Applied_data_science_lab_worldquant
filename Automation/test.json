@@ -2,79 +2,69 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "ef8ba206",
+   "id": "cae9cf17",
    "metadata": {},
    "source": [
-    "<font size=\"+3\"><strong>2.3. Predicting Price with Neighborhood</strong></font>"
+    "<font size=\"+3\"><strong>3.1. Wrangling Data with MongoDB 🇰🇪</strong></font>"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 1,
-   "id": "d4432892",
+   "execution_count": null,
+   "id": "284fa992-bf10-4101-9d16-ec2c07b041ee",
    "metadata": {},
    "outputs": [],
    "source": [
-    "import warnings\n",
-    "from glob import glob\n",
+    "from pprint import PrettyPrinter\n",
     "\n",
-    "import matplotlib.pyplot as plt\n",
-    "import numpy as np\n",
     "import pandas as pd\n",
-    "from category_encoders import OneHotEncoder\n",
     "from IPython.display import VimeoVideo\n",
-    "from sklearn.linear_model import LinearRegression, Ridge  # noqa F401\n",
-    "from sklearn.metrics import mean_absolute_error\n",
-    "from sklearn.pipeline import make_pipeline\n",
-    "from sklearn.utils.validation import check_is_fitted\n",
-    "\n",
-    "warnings.simplefilter(action=\"ignore\", category=FutureWarning)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "6d20436c",
-   "metadata": {},
-   "source": [
-    "In the last lesson, we created a model that used location — represented by latitude and longitude — to predict price. In this lesson, we're going to use a different representation for location: neighborhood. "
+    "from pymongo import MongoClient"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 2,
-   "id": "9146209d",
+   "execution_count": null,
+   "id": "8351a960-d9a8-4d10-a07b-81283b519591",
    "metadata": {},
-   "outputs": [
-    {
-     "data": {
-      "text/html": [
-       "\n",
-       "        <iframe\n",
-       "            width=\"600\"\n",
-       "            height=\"300\"\n",
-       "            src=\"https://player.vimeo.com/video/656790491?h=6325554e55\"\n",
-       "            frameborder=\"0\"\n",
-       "            allowfullscreen\n",
-       "            \n",
-       "        ></iframe>\n",
-       "        "
-      ],
-      "text/plain": [
-       "<IPython.lib.display.VimeoVideo at 0x745cf450e650>"
-      ]
-     },
-     "execution_count": 2,
-     "metadata": {},
-     "output_type": "execute_result"
-    }
-   ],
+   "outputs": [],
    "source": [
-    "VimeoVideo(\"656790491\", h=\"6325554e55\", width=600)"
+    "VimeoVideo(\"665412094\", h=\"8334dfab2e\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a1b8df3e-a1f4-4a82-a1f9-c0c4567e1f23",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412135\", h=\"dcff7ab83a\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "b67175f7",
+   "id": "a092d51f-57c8-4a1f-a738-eb863552b2df",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.1:** Instantiate a `PrettyPrinter`, and assign it to the variable `pp`.\n",
+    "\n",
+    "- [<span id='technique'>Construct a `PrettyPrinter` instance in <span id='tool'>pprint.](../%40textbook/11-databases-mongodb.ipynb#Servers-and-Clients)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0e576abf-7d42-4af8-b3f7-404afc254afb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pp = ..."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "adaea611-972d-41c1-9061-38271bcf36df",
    "metadata": {},
    "source": [
     "# Prepare Data"
@@ -82,7 +72,476 @@
   },
   {
    "cell_type": "markdown",
-   "id": "68d1a9b7",
+   "id": "5e8b4c50-ab78-48f5-8517-e1b8558b3e37",
+   "metadata": {},
+   "source": [
+    "## Connect"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "63fbf101-e12b-42ee-9c7e-bea010b3cc24",
+   "metadata": {},
+   "source": [
+    "<div style=\"padding: 1em; border: 1px solid #f0ad4e; border-left: 6px solid #f0ad4e; background-color: #fcf8e3; color: #8a6d3b; border-radius: 4px;\">\n",
+    "\n",
+    "<strong>🛠️ Instruction:</strong> Locate the IP address of the machine running MongoDB and assign it to the variable <code>host</code>. Make sure to use a <strong>string</strong> (i.e., wrap the IP in quotes).<br><br>\n",
+    "\n",
+    "<strong>⚠️ Note:</strong> The IP address is <strong>dynamic</strong> — it may change every time you start the lab. Always check the current IP before proceeding.\n",
+    "\n",
+    "</div>\n",
+    "\n",
+    "<img src=\"../images/mongo_ip.png\" alt=\"MongoDB\" width=\"600\"/>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1e70a592-e052-480e-b7d7-96b7fe5770af",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "host = \"...\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ddd7faef-e6fd-4f80-baf3-69aefe38628d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412155\", h=\"1ca0dd03d0\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5f4a7da3-ceb8-44ae-8b32-a970a146ec15",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.2:** Create a client that connects to the database running at `host` on port `27017`.\n",
+    "\n",
+    "- [What's a <span id='term'>database client?](../%40textbook/11-databases-mongodb.ipynb#Servers-and-Clients)\n",
+    "- [What's a <span id='term'>database server?](../%40textbook/11-databases-mongodb.ipynb#Servers-and-Clients)\n",
+    "- [<span id='technique'>Create a client object for a <span id='tool'>MongoDB</span> instance.](../%40textbook/11-databases-mongodb.ipynb#Servers-and-Clients) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5fee19d3-06cc-48a4-b823-75a21f8b7dd7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "client = ..."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "db78b375-3e08-4755-b8f7-9dc0efc4898f",
+   "metadata": {},
+   "source": [
+    "## Explore"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "db92461a-618e-446e-965b-5bcabe80894d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412176\", h=\"6fea7c6346\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "440ef108-b04b-4c6d-8ab3-76c2c3aaf3c4",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.3:** Print a list of the databases available on `client`.\n",
+    "\n",
+    "- [What's an <span id='term'>iterator?](../%40textbook/02-python-advanced.ipynb#Iterators-and-Iterables-)\n",
+    "- [<span id='technique'>List the databases of a server using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Exploring-a-Database)\n",
+    "- [<span id='technique'>Print output using <span id='tool'>pprint.](../%40textbook/11-databases-mongodb.ipynb#Exploring-a-Database)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "51a9dcf3-1e3e-4e03-8777-77fcf7134051",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pp.pprint(...)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1a2f0197-142b-4c5b-a4d7-1d4189e6bc72",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412216\", h=\"7d4027dc33\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0a85a5eb-b03c-4a26-bffd-40acb5ead879",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.4:** Assign the `\"air-quality\"` database to the variable `db`.\n",
+    "\n",
+    "- [What's a <span id='term'>MongoDB database?](../%40textbook/11-databases-mongodb.ipynb#Databases)\n",
+    "- [<span id='technique'>Access a database using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Servers-and-Clients)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "54ce822a-f18e-4e6f-b717-fbf64f35313a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "db = ..."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a5734301-574f-4426-8214-da212d388f03",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412231\", h=\"89c546b00f\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "29fa8e0f-41aa-4bb9-8adc-2855d2afe8c8",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.5:** Use the [`list_collections`](https://pymongo.readthedocs.io/en/stable/api/pymongo/database.html?highlight=list_collections#pymongo.database.Database.list_collections) method to print a list of the collections available in `db`.\n",
+    "\n",
+    "- [What's a <span id='term'>MongoDB collection?](../%40textbook/11-databases-mongodb.ipynb#Collections)\n",
+    "- [<span id='technique'>List the collections in a database using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Exploring-a-Database)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "dbb1df4c-3732-4b34-99f2-4c709a1e4d2f",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "87236a51-e776-4f21-a564-4fc823ce229f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412252\", h=\"bff2abbdc0\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e7e70fd1-42d9-413d-b4f6-38e623623ad0",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.6:** Assign the `\"nairobi\"` collection in `db` to the variable name `nairobi`.\n",
+    "\n",
+    "- [<span id='technique'>Access a collection in a database using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Collections)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8f18c1f6-098f-495d-bc36-ea72e7eb9164",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "nairobi = ..."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b7423e4e-4ec7-4cec-94bf-50ec73726257",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412270\", h=\"e4a5f5c84b\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c109d8a6-f9eb-4f93-86e3-8e2c8695ca13",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.7:** Use the [`count_documents`](https://pymongo.readthedocs.io/en/stable/api/pymongo/collection.html#pymongo.collection.Collection.count_documents) method to see how many documents are in the `nairobi` collection.\n",
+    "\n",
+    "- [What's a <span id='term'>MongoDB document?](../%40textbook/11-databases-mongodb.ipynb#Documents)\n",
+    "- [<span id='technique'>Count the documents in a collection using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Documents) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "476dd0f6-2296-4fd1-9181-491a93c0817b",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "295009e4-869f-4508-9cbc-f73bf4938c67",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412279\", h=\"c2315f3be1\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5e04f96e-d7fb-4861-93f7-84669184a5ee",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.8:** Use the [`find_one`](https://pymongo.readthedocs.io/en/stable/api/pymongo/collection.html#pymongo.collection.Collection.find_one) method to retrieve one document from the `nairobi` collection, and assign it to the variable name `result`.\n",
+    "\n",
+    "- [What's <span id='term'>metadata?](../%40textbook/11-databases-mongodb.ipynb#Metadata)\n",
+    "- [What's <span id='term'>semi-structured data?](../%40textbook/11-databases-mongodb.ipynb#Semi-structured-Data)\n",
+    "- [<span id='technique'>Retrieve a document from a collection using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Retrieving-Data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bb4fbe42-7c71-45ee-87f7-f6844ba630cc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "result = ...\n",
+    "pp.pprint(result)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cc31ae98-b951-49de-aa9b-e1d03547ede5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412306\", h=\"e1e913dfd1\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fb3a4fc1-a04e-42f2-8d22-161cdf969de4",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.9:** Use the [`distinct`](https://pymongo.readthedocs.io/en/stable/api/pymongo/collection.html#pymongo.collection.Collection.distinct) method to determine how many sensor sites are included in the `nairobi` collection.\n",
+    "\n",
+    "- [<span id='technique'>Get a list of distinct values for a key among all documents using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Analyzing-Data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "df2f6858-3000-40f0-9b99-aefb6cc7bb40",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c0e9eb86-1b55-4b05-a64e-dc4a9fb4eb00",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412322\", h=\"4776c6d548\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6548bd90-7600-4812-afe8-102c6ac7b4e4",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.10:** Use the [`count_documents`](https://pymongo.readthedocs.io/en/stable/api/pymongo/collection.html#pymongo.collection.Collection.count_documents) method to determine how many readings there are for each site in the `nairobi` collection.\n",
+    "\n",
+    "- [<span id='technique'>Count the documents in a collection using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Analyzing-Data) <span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "590b43b0-dbbe-4ca0-8d87-b8ebe7dad190",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Documents from site 6:\", ...)\n",
+    "print(\"Documents from site 29:\", ...)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1352bad3-a30d-4699-b174-f0a75dafab5c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412344\", h=\"d2354584cd\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4156c47a-d7a1-4c38-a5ee-2016bf90e0f4",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.11:** Use the [`aggregate`](https://pymongo.readthedocs.io/en/stable/api/pymongo/collection.html#pymongo.collection.Collection.aggregate) method to determine how many readings there are for each site in the `nairobi` collection.\n",
+    "\n",
+    "- [<span id='technique'>Perform aggregation calculations on documents using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Analyzing-Data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e9715900-ec7b-4650-b6c2-3c4a702c5d84",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "result = ...\n",
+    "pp.pprint(list(result))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "53c55cef-bbc7-4070-bc17-5808fdc82998",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412372\", h=\"565122c9cc\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1d7bd153-ba49-4227-b113-10109cfd1c4e",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.12:** Use the [`distinct`](https://pymongo.readthedocs.io/en/stable/api/pymongo/collection.html#pymongo.collection.Collection.distinct) method to determine how many types of measurements have been taken in the `nairobi` collection.\n",
+    "\n",
+    "- [<span id='technique'>Get a list of distinct values for a key among all documents using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Analyzing-Data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "68016374-c397-488b-a698-6bc00aa778f9",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "adacf913-c3db-4bf8-af3d-9e16acbc81f7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412380\", h=\"f7f7a39bb3\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "087fbada-e0db-4ae5-a89a-a8c49c202ef5",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.13:** Use the [`find`](https://pymongo.readthedocs.io/en/stable/api/pymongo/collection.html#pymongo.collection.Collection.find) method to retrieve the PM 2.5 readings from all sites. Be sure to limit your results to 3 records only.\n",
+    "\n",
+    "- [<span id='technique'>Query a collection using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Retrieving-Data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "da7d27ca-815d-480f-a570-9f72091bac22",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "result = ...\n",
+    "pp.pprint(list(result))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ca44aec6-ef50-4321-b078-2329620558a0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412389\", h=\"8976ea3090\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "44bd75e3-aada-4468-89d3-bbfbf3727729",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.14:** Use the [`aggregate`](https://pymongo.readthedocs.io/en/stable/api/pymongo/collection.html#pymongo.collection.Collection.aggregate) method to calculate how many readings there are for each type (`\"humidity\"`, `\"temperature\"`, `\"P2\"`, and `\"P1\"`) in site `6`.\n",
+    "\n",
+    "- [<span id='technique'>Perform aggregation calculations on documents using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Analyzing-Data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "835cf805-a1ec-4074-924e-740438414c77",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "result = ...\n",
+    "pp.pprint(list(result))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7156a914-6335-424a-888d-a44dafd6b814",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412418\", h=\"0c4b125254\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e3d5acbd-aacd-4a98-9663-3cacd3e3b51d",
+   "metadata": {},
+   "source": [
+    "**Task 3.1.15:** Use the [`aggregate`](https://pymongo.readthedocs.io/en/stable/api/pymongo/collection.html#pymongo.collection.Collection.aggregate) method to calculate how many readings there are for each type (`\"humidity\"`, `\"temperature\"`, `\"P2\"`, and `\"P1\"`) in site `29`.\n",
+    "\n",
+    "- [<span id='technique'>Perform aggregation calculations on documents using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Analyzing-Data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "89ead8d6-f405-4e1d-b119-d5e3de33f3a6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "result = ...\n",
+    "pp.pprint(list(result))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fb74fa35-d155-4d18-bb27-a62503f81313",
    "metadata": {},
    "source": [
     "## Import"
@@ -91,171 +550,58 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "54deb7f2",
+   "id": "1d31f47c-3985-410c-8075-cc8afe2328d9",
    "metadata": {},
    "outputs": [],
    "source": [
-    "def wrangle(filepath):\n",
-    "    # Read CSV file\n",
-    "    df = pd.read_csv(filepath)\n",
-    "\n",
-    "    # Subset data: Apartments in \"Capital Federal\", less than 400,000\n",
-    "    mask_ba = df[\"place_with_parent_names\"].str.contains(\"Capital Federal\")\n",
-    "    mask_apt = df[\"property_type\"] == \"apartment\"\n",
-    "    mask_price = df[\"price_aprox_usd\"] < 400_000\n",
-    "    df = df[mask_ba & mask_apt & mask_price]\n",
-    "\n",
-    "    # Subset data: Remove outliers for \"surface_covered_in_m2\"\n",
-    "    low, high = df[\"surface_covered_in_m2\"].quantile([0.1, 0.9])\n",
-    "    mask_area = df[\"surface_covered_in_m2\"].between(low, high)\n",
-    "    df = df[mask_area]\n",
-    "\n",
-    "    # Split \"lat-lon\" column\n",
-    "    df[[\"lat\", \"lon\"]] = df[\"lat-lon\"].str.split(\",\", expand=True).astype(float)\n",
-    "    df.drop(columns=\"lat-lon\", inplace=True)\n",
-    "\n",
-    "    \n",
-    "\n",
-    "    return df"
+    "VimeoVideo(\"665412437\", h=\"7a436c7e7e\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "d87ee217",
+   "id": "6fd6a780-14c2-441c-9ec5-50a1ed492097",
    "metadata": {},
    "source": [
-    "In the last lesson, we used our `wrangle` function to import two CSV files as DataFrames. But what if we had hundreds of CSV files to import? Wrangling them one-by-one wouldn't be an option. So let's start with a technique for reading several CSV files into a single DataFrame. \n",
+    "**Task 3.1.16:** Use the [`find`](https://pymongo.readthedocs.io/en/stable/api/pymongo/collection.html#pymongo.collection.Collection.find) method to retrieve the PM 2.5 readings from site `29`. Be sure to limit your results to 3 records only. Since we won't need the metadata for our model, use the `projection` argument to limit the results to the `\"P2\"` and `\"timestamp\"` keys only.\n",
     "\n",
-    "The first step is to gather the names of all the files we want to import. We can do this using pattern matching. <span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
+    "- [<span id='technique'>Query a collection using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Retrieving-Data)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a1620f59",
+   "id": "7d709937-22c5-43d8-a34f-6126792f0818",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"656790237\", h=\"1502e3765a\", width=600)"
+    "result = ...\n",
+    "pp.pprint(result.next())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "98f2ff2d-e317-45da-8fdf-1aad38c17eec",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665412442\", h=\"494636d1ea\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "530d564f",
+   "id": "167dad40-55f3-48db-abe6-d866310951b4",
    "metadata": {},
    "source": [
-    "**Task 2.3.1:** Use [`glob`](https://docs.python.org/3/library/glob.html#glob.glob) to create a list that contains the filenames for all the Buenos Aires real estate CSV files in the `data` directory. Assign this list to the variable name `files`.\n",
+    "**Task 3.1.17:** Read records from your `result` into the DataFrame `df`. Be sure to set the index to `\"timestamp\"`.\n",
     "\n",
-    "- [<span id='technique'>Assemble a list of path names that match a pattern in <span id='tool'>glob.](../%40textbook/02-python-advanced.ipynb#Working-with-strings-)"
+    "- [<span id='technique'>Create a DataFrame from a dictionary using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Working-with-DataFrames)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "e9bbce0f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "files = ...\n",
-    "files"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "205cface",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert len(files) == 5, f\"`files` should contain 5 items, not {len(files)}\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "986c0edf",
-   "metadata": {},
-   "source": [
-    "The next step is to read each of the CSVs in `files` into a DataFrame, and put all of those DataFrames into a list. What's a good way to iterate through `files` so we can do this? A `for` loop!"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "432fd39f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656789768\", h=\"3b8f3bca0b\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "81e899f9",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.2:** Use your `wrangle` function in a `for` loop to create a list named `frames`. The list should the cleaned DataFrames created from the CSV filenames your collected in `files`.\n",
-    "\n",
-    "- [What's a <span id='term'>for loop</span>?](../%40textbook/01-python-getting-started.ipynb#Python-for-Loops)\n",
-    "- [<span id='technique'>Write a for loop in <span id='tool'>Python.](../%40textbook/01-python-getting-started.ipynb#Working-with-for-Loops)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "4b9e7959",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "frames = []\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "2a0c5c58",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert len(frames) == 5, f\"`frames` should contain 5 items, not {len(frames)}\"\n",
-    "assert all(\n",
-    "    [isinstance(frame, pd.DataFrame) for frame in frames]\n",
-    "), \"The items in `frames` should all be DataFrames.\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "291a783c",
-   "metadata": {},
-   "source": [
-    "The final step is to use pandas to combine all the DataFrames in `frames`. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f674cd98",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656789700\", h=\"57adef4afe\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "9a3c80f7",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.3:** Use [`pd.concat`](https://pandas.pydata.org/docs/reference/api/pandas.concat.html) to concatenate the items in `frames` into a single DataFrame `df`. Make sure you set the `ignore_index` argument to `True`.\n",
-    "\n",
-    "- [<span id='technique'>Concatenate two or more DataFrames using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Concatenating-DataFrames)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "c612ace6",
+   "id": "568c0e55-6c88-4d85-85c7-5c52f5714395",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -266,752 +612,21 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f9497ad4",
+   "id": "085a8763-15f0-49bd-91c4-3fca0a87e0e7",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Check your work\n",
-    "assert len(df) == 6582, f\"`df` is the wrong size: {len(df)}.\""
+    "assert df.shape[1] == 1, f\"`df` should have only one column, not {df.shape[1]}.\"\n",
+    "assert df.columns == [\n",
+    "    \"P2\"\n",
+    "], f\"The single column in `df` should be `'P2'`, not {df.columns[0]}.\"\n",
+    "assert isinstance(df.index, pd.DatetimeIndex), \"`df` should have a `DatetimeIndex`.\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "e57ed531",
-   "metadata": {},
-   "source": [
-    "Excellent work! You can now clean and combine as many CSV files as your computer can handle. You're well on your way to working with big data. 📈"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "7cb8eead",
-   "metadata": {},
-   "source": [
-    "## Explore"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "2a79655d",
-   "metadata": {},
-   "source": [
-    "Looking through the output from the `df.head()` call above, there's a little bit more cleaning we need to do before we can work with the neighborhood information in this dataset. The good news is that, because we're using a `wrangle` function, we only need to change the function to re-clean all of our CSV files. This is why functions are so useful."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "e44dc8ea",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656791659\", h=\"581201dc92\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "ef5ab044",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.4:** Modify your `wrangle` function to create a new feature `\"neighborhood\"`. You can find the neighborhood for each property in the `\"place_with_parent_names\"` column. For example, a property with the place name `\"|Argentina|Capital Federal|Palermo|\"` is located in the neighborhood is `\"Palermo\"`. Also, your function should drop the `\"place_with_parent_names\"` column.\n",
-    "\n",
-    "Be sure to rerun all the cells above before you continue.\n",
-    "\n",
-    "- [<span id='technique'>Split the strings in one column to create another using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Splitting-Strings)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a723ec6c",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert df.shape == (6582, 17), f\"`df` is the wrong size: {df.shape}.\"\n",
-    "assert (\n",
-    "    \"place_with_parent_names\" not in df\n",
-    "), 'Remember to remove the `\"place_with_parent_names\"` column.'"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "fdaeb0ac",
-   "metadata": {},
-   "source": [
-    "## Split"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "2c34aed7",
-   "metadata": {},
-   "source": [
-    "At this point, you should feel more comfortable with the splitting data, so we're going to condense the whole process down to one task. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "3cb39e4d",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656791577\", h=\"0ceb5341f8\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "d50a1d70",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.5:** Create your feature matrix `X_train` and target vector `y_train`. `X_train` should contain one feature: `\"neighborhood\"`. Your target is `\"price_aprox_usd\"`. \n",
-    "\n",
-    "- [What's a <span id='term'>feature matrix?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
-    "- [What's a <span id='term'>target vector?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
-    "- [<span id='technique'>Subset a DataFrame by selecting one or more columns in <span id='tool'>pandas.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns) \n",
-    "- [<span id='technique'>Select a Series from a DataFrame in <span id='tool'>pandas.](../%40textbook/04-pandas-advanced.ipynb#Select-a-Series-from-a-DataFrame) "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "1da605f7",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "target = \"price_aprox_usd\"\n",
-    "features = [\"neighborhood\"]\n",
-    "y_train = ...\n",
-    "X_train = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "8e64e0d1",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert X_train.shape == (6582, 1), f\"`X_train` is the wrong size: {X_train.shape}.\"\n",
-    "assert y_train.shape == (6582,), f\"`y_train` is the wrong size: {y_train.shape}.\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "a3a23c81",
-   "metadata": {
-    "tags": []
-   },
-   "source": [
-    "# Build Model"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "66e1de7e",
-   "metadata": {},
-   "source": [
-    "## Baseline"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "45ea45bb",
-   "metadata": {},
-   "source": [
-    "Let's also condense the code we use to establish our baseline. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "327fc35e",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656791443\", h=\"120a740cc3\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "e2c70806",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.6:** Calculate the baseline mean absolute error for your model.\n",
-    "\n",
-    "- [<span id='term'>What's a performance metric?](../%40textbook/12-ml-core.ipynb#Performance-Metrics)\n",
-    "- [<span id='term'>What's mean absolute error?](../%40textbook/12-ml-core.ipynb#Performance-Metrics)\n",
-    "- [<span id='technique'>Calculate summary statistics for a DataFrame or Series in <span id='tool'>pandas.](../%40textbook/05-pandas-summary-statistics.ipynb#Working-with-Summary-Statistics)\n",
-    "- [<span id='technique'>Calculate the mean absolute error for a list of predictions in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "765d04c6",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "y_mean = ...\n",
-    "y_pred_baseline = ...\n",
-    "\n",
-    "print(\"Mean apt price:\", ...)\n",
-    "\n",
-    "print(\"Baseline MAE:\", ...)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "98bcf348",
-   "metadata": {},
-   "source": [
-    "The mean apartment price and baseline MAE should be similar but not identical to last lesson. The numbers will change since we're working with more data."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "d9821da5",
-   "metadata": {},
-   "source": [
-    "## Iterate"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "de7be972",
-   "metadata": {},
-   "source": [
-    "If you try to fit a `LinearRegression` predictor to your training data at this point, you'll get an error that looks like this:\n",
-    "\n",
-    "```\n",
-    "ValueError: could not convert string to float\n",
-    "```\n",
-    "\n",
-    "What does this mean? When you fit a linear regression model, you're asking scikit-learn to perform a mathematical operation. The problem is that our training set contains neighborhood information in non-numerical form. In order to create our model we need to **encode** that information so that it's represented numerically. The good news is that there are lots of transformers that can do this. Here, we'll use the one from the [Category Encoders](https://contrib.scikit-learn.org/category_encoders/index.html) library, called a [`OneHotEncoder`](https://contrib.scikit-learn.org/category_encoders/onehot.html).\n",
-    "\n",
-    "Before we build include this transformer in our pipeline, let's explore how it works. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f21cf386",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656792790\", h=\"4097efb40d\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "65f8b5bc",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.7:** First, instantiate a `OneHotEncoder` named `ohe`. Make sure to set the `use_cat_names` argument to `True`. Next, fit your transformer to the feature matrix `X_train`. Finally, use your encoder to transform the feature matrix `X_train`, and assign the transformed data to the variable `XT_train`.\n",
-    "\n",
-    "- [What's <span id='term'>one-hot encoding?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)\n",
-    "- [<span id='technique'>Instantiate a transformer in <span id='tool'>scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)\n",
-    "- [<span id='technique'>Fit a transformer to training data in <span id='tool'>scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)\n",
-    "- [<span id='technique'>Transform data using a transformer in <span id='tool'>scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "bf53657e",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "ohe = ...\n",
-    "\n",
-    "XT_train = ...\n",
-    "print(XT_train.shape)\n",
-    "XT_train.head()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "5a2cb518",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert XT_train.shape == (6582, 57), f\"`XT_train` is the wrong shape: {XT_train.shape}\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "24726732",
-   "metadata": {},
-   "source": [
-    "Now that we have an idea for how the `OneHotEncoder` works, let's bring it into our pipeline."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0c6b31cb",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656792622\", h=\"0b9d189e8f\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "451d4ff7",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.8:** Create a pipeline named `model` that contains a `OneHotEncoder` transformer and a `LinearRegression` predictor. Then fit your model to the training data. \n",
-    "\n",
-    "- [What's a <span id='term'>pipeline?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#scikit-learn-in-Production)\n",
-    "- [<span id='technique'>Create a pipeline in <span id='tool'>scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Creating-a-Pipeline-in-scikit-learn)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a99cd335-0413-43cf-833a-22618e327fc3",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "model = ...\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "4ded7d02",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "check_is_fitted(model[-1])"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "037f0729",
-   "metadata": {},
-   "source": [
-    "Wow, you just built a model with two transformers and a predictor! When you started this course, did you think you'd be able to do something like that? 😁"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "86dcd980",
-   "metadata": {},
-   "source": [
-    "## Evaluate"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "b0b181df",
-   "metadata": {},
-   "source": [
-    "Regardless of how you build your model, the evaluation step stays the same. Let's see how our model performs with the training set."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "d3936246",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656792525\", h=\"09edc1c3d6\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "270bf5cf",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.9:** First, create a list of predictions for the observations in your feature matrix `X_train`. Name this list `y_pred_training`. Then calculate the training mean absolute error for your predictions in `y_pred_training` as compared to the true targets in `y_train`.\n",
-    "\n",
-    "- [<span id='technique'>Generate predictions using a trained model in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Generating-Predictions-Using-a-Trained-Model)\n",
-    "- [<span id='technique'>Calculate the mean absolute error for a list of predictions in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "cd4ecf5e",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "y_pred_training = ...\n",
-    "mae_training = ...\n",
-    "print(\"Training MAE:\", round(mae_training, 2))"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "75e7ebce",
-   "metadata": {
-    "tags": []
-   },
-   "source": [
-    "Now let's check our test performance. "
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "60e4e72f",
-   "metadata": {
-    "tags": []
-   },
-   "source": [
-    "**Task 2.3.10:** Run the code below to import your test data `buenos-aires-test-features.csv` into a DataFrame and generate a Series of predictions using your model.  After the code runs successfully, click on the  **Check Activity** button to verify your predictions.\n",
-    "\n",
-    "- [What's generalizability?](../%40textbook/12-ml-core.ipynb#Generalization)\n",
-    "- [<span id='technique'>Generate predictions using a trained model in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Generating-Predictions-Using-a-Trained-Model)\n",
-    "- [<span id='technique'>Calculate the mean absolute error for a list of predictions in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f61223a5",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "X_test = pd.read_csv(\"data/buenos-aires-test-features.csv\")[features]\n",
-    "y_pred_test = pd.Series(model.predict(X_test))\n",
-    "y_pred_test.head()"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "2681cc11",
-   "metadata": {},
-   "source": [
-    "# Communicate Results"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "0b82e7e3",
-   "metadata": {},
-   "source": [
-    "If we write out the equation for our model, it'll be too big to fit on the screen. That's because, when we used the `OneHotEncoder` to encode the neighborhood data, we created a much wider DataFrame, and each column/feature has it's own coefficient in our model's equation.\n",
-    "\n",
-    "<center><img src=\"../images/proj-2.006.png\" alt=\"Equation: y = β0 + β1 x1 + β2 x2 + ... + β59 x59 + β60 x60 \" style=\"width: 800px;\"/></center>\n",
-    "\n",
-    "This is important to keep in mind for two reasons. First, it means that this is a **high-dimensional** model. Instead of a 2D or 3D plot, we'd need a 58-dimensional plot to represent it, which is impossible! Second, it means that we'll need to extract and represent the information for our equation a little differently than before. Let's start by getting our intercept and coefficient."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "78ec7b45",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656793909\", h=\"fca67856b4\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "46df135e",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.11:** Extract the intercept and coefficients for your model. \n",
-    "\n",
-    "- [What's an <span id='term'>intercept</span> in a linear model?](../%40textbook/12-ml-core.ipynb#Model-Types)\n",
-    "- [What's a <span id='term'>coefficient</span> in a linear model?](../%40textbook/12-ml-core.ipynb#Model-Types)\n",
-    "- [<span id='technique'>Access an object in a pipeline in <span id='tool'>scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "e486c091",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "intercept = ...\n",
-    "coefficients = ...\n",
-    "print(\"coefficients len:\", len(coefficients))\n",
-    "print(coefficients[:5])  # First five coefficients"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "26e522c7",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert isinstance(\n",
-    "    intercept, float\n",
-    "), f\"`intercept` should be a `float`, not {type(intercept)}.\"\n",
-    "assert isinstance(\n",
-    "    coefficients, np.ndarray\n",
-    "), f\"`coefficients` should be a `float`, not {type(coefficients)}.\"\n",
-    "assert coefficients.shape == (\n",
-    "    57,\n",
-    "), f\"`coefficients` is wrong shape: {coefficients.shape}.\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "eec40989",
-   "metadata": {},
-   "source": [
-    "We have the values of our coefficients, but how do we know which features they belong to? We'll need to get that information by going into the part of our pipeline that did the encoding."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "06ee62ca",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656793812\", h=\"810161b84e\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "1b4ff85e",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.12:** Extract the feature names of your encoded data from the `OneHotEncoder` in your model.\n",
-    "\n",
-    "- [Access an object in a pipeline in scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "d77cb327",
-   "metadata": {
-    "tags": []
-   },
-   "outputs": [],
-   "source": [
-    "feature_names = ...\n",
-    "print(\"features len:\", len(feature_names))\n",
-    "print(feature_names[:5])  # First five feature names"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9cef78fe",
-   "metadata": {
-    "tags": []
-   },
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert isinstance(\n",
-    "    feature_names, np.ndarray\n",
-    "), f\"`features` should be a `list`, not {type(feature_names)}.\"\n",
-    "assert len(feature_names) == len(\n",
-    "    coefficients\n",
-    "), \"You should have the same number of features and coefficients.\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "c3816ad6",
-   "metadata": {},
-   "source": [
-    "We have coefficients and feature names, and now we need to put them together. For that, we'll use a Series."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "70d49aa4",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656793718\", h=\"1e2a1e1de8\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "bac7f9ec",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.13:** Create a pandas Series named `feat_imp` where the index is your `features` and the values are your `coefficients`.\n",
-    "\n",
-    "- [<span id='technique'>Create a Series in <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Working-with-Columns)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a0448045",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "feat_imp = ...\n",
-    "feat_imp.head()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "b3f63b0b",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert isinstance(\n",
-    "    feat_imp, pd.Series\n",
-    "), f\"`feat_imp` should be a `float`, not {type(feat_imp)}.\"\n",
-    "assert feat_imp.shape == (57,), f\"`feat_imp` is wrong shape: {feat_imp.shape}.\"\n",
-    "assert all(\n",
-    "    a == b for a, b in zip(sorted(feature_names), sorted(feat_imp.index))\n",
-    "), \"The index of `feat_imp` should be identical to `features`.\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "ccc4d519",
-   "metadata": {},
-   "source": [
-    "To be clear, it's definitely not a good idea to show this long equation to an audience, but let's print it out just to check our work. Since there are so many terms to print, we'll use a `for` loop."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "17988bf1",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656797021\", h=\"dc90e6dac3\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "59f0d7ae",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.14:** Run the cell below to print the equation that your model has determined for predicting apartment price based on longitude and latitude.\n",
-    "\n",
-    "- [What's an f-string?](../%40textbook/02-python-advanced.ipynb#Working-with-f-strings-)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f11600f4",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "print(f\"price = {intercept.round(2)}\")\n",
-    "for f, c in feat_imp.items():\n",
-    "    print(f\"+ ({round(c, 2)} * {f})\")"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "bae436d0",
-   "metadata": {},
-   "source": [
-    "<div class=\"alert alert-block alert-warning\">\n",
-    "<b>Warning:</b> In the first lesson for this project, we said that you shouldn't make any changes to your model after you see your test metrics. That's still true. However, we're breaking that rule here so that we can discuss overfitting. In future lessons, you'll learn how to protect against overfitting without checking your test set.\n",
-    "</div>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "632a5619",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656799309\", h=\"a7130deb64\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "b705f389",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.15:** Scroll up, change the predictor in your model to `Ridge`, and retrain it. Then evaluate the model's training and test performance. Do you still have an overfitting problem? If not, extract the intercept and coefficients again (you'll need to change your code a little bit) and regenerate the model's equation. Does it look different than before?\n",
-    "\n",
-    "- [What's overfitting?](../%40textbook/15-ml-regression.ipynb#Ridge-Regression)\n",
-    "- [What's regularization?](../%40textbook/15-ml-regression.ipynb#Ridge-Regression)\n",
-    "- [What's ridge regression?](../%40textbook/15-ml-regression.ipynb#Ridge-Regression)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "06272b41",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert isinstance(\n",
-    "    model[-1], Ridge\n",
-    "), \"Did you retrain your model using a `Ridge` predictor?\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "db2bd2da",
-   "metadata": {},
-   "source": [
-    "We're back on track with our model, so let's create a visualization that will help a non-technical audience understand what the most important features for our model in predicting apartment price. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "b9202c1c",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"656798530\", h=\"9a9350eff1\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "c9ff41ef",
-   "metadata": {},
-   "source": [
-    "**Task 2.3.16:** Create a horizontal bar chart that shows the top 15 coefficients for your model, based on their absolute value.\n",
-    "\n",
-    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)\n",
-    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f2e71f6d",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "..."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "876644dc",
-   "metadata": {},
-   "source": [
-    "Looking at this bar chart, we can see that the poshest neighborhoods in Buenos Aires like [Puerto Madero](https://en.wikipedia.org/wiki/Puerto_Madero) and [Recoleta](https://en.wikipedia.org/wiki/Recoleta,_Buenos_Aires) increase the predicted price of an apartment, while more working-class neighborhoods like [Villa Soldati](https://en.wikipedia.org/wiki/Villa_Soldati) and [Villa Lugano](https://en.wikipedia.org/wiki/Villa_Lugano) decrease the predicted price. \n",
-    "\n",
-    "Just for fun, check out [this song](https://www.youtube.com/watch?v=RGlunBDvsaw) by Kevin Johansen about Puerto Madero. 🎶"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "1929951e",
+   "id": "c8657a23",
    "metadata": {
     "deletable": false,
     "editable": false
@@ -1042,10 +657,6 @@
    "pygments_lexer": "ipython3",
    "version": "3.11.0"
   },
-  "toc-autonumbering": false,
-  "toc-showcode": false,
-  "toc-showmarkdowntxt": false,
-  "toc-showtags": false,
   "widgets": {
    "application/vnd.jupyter.widget-state+json": {
     "state": {},
