@@ -2,46 +2,72 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "da0b1108-1533-44cb-9ca3-97c6cccd6a5e",
+   "id": "58d3e6f5-9314-480c-b4bd-f4be542a0b38",
    "metadata": {},
    "source": [
-    "### <font size=\"+3\"><strong>3.3. Autoregressive Models</strong></font>"
+    "<font size=\"+3\"><strong>3.4. ARMA Models</strong></font>"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
+   "execution_count": 1,
    "id": "2a2428fb-63b3-47b2-94c2-34501f9e3f3e",
    "metadata": {},
    "outputs": [],
    "source": [
+    "import inspect\n",
+    "import time\n",
     "import warnings\n",
     "\n",
     "import matplotlib.pyplot as plt\n",
     "import pandas as pd\n",
     "import plotly.express as px\n",
+    "import seaborn as sns\n",
     "from IPython.display import VimeoVideo\n",
     "from pymongo import MongoClient\n",
     "from sklearn.metrics import mean_absolute_error\n",
     "from statsmodels.graphics.tsaplots import plot_acf, plot_pacf\n",
-    "from statsmodels.tsa.ar_model import AutoReg\n",
+    "from statsmodels.tsa.arima.model import ARIMA\n",
     "\n",
-    "warnings.simplefilter(action=\"ignore\", category=FutureWarning)"
+    "warnings.filterwarnings(\"ignore\")"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "38e20181-2307-4291-a9ea-26c84453f377",
+   "execution_count": 2,
+   "id": "435e37c9-bfd3-45d6-a094-4882a785ecd8",
    "metadata": {},
-   "outputs": [],
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "\n",
+       "        <iframe\n",
+       "            width=\"600\"\n",
+       "            height=\"300\"\n",
+       "            src=\"https://player.vimeo.com/video/665851728?h=95c59d2805\"\n",
+       "            frameborder=\"0\"\n",
+       "            allowfullscreen\n",
+       "            \n",
+       "        ></iframe>\n",
+       "        "
+      ],
+      "text/plain": [
+       "<IPython.lib.display.VimeoVideo at 0x7b4a5759b750>"
+      ]
+     },
+     "execution_count": 2,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
    "source": [
-    "VimeoVideo(\"665851858\", h=\"e39fc3d260\", width=600)"
+    "VimeoVideo(\"665851728\", h=\"95c59d2805\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "ff1a66f1-3742-4825-bc0a-89c3ed28f43a",
+   "id": "8237da8a-4242-4bd4-bf63-c40cd37ca057",
    "metadata": {},
    "source": [
     "<div style=\"padding: 1em; border: 1px solid #f0ad4e; border-left: 6px solid #f0ad4e; background-color: #fcf8e3; color: #8a6d3b; border-radius: 4px;\">\n",
@@ -57,8 +83,8 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "ac5f2d9e-18cc-465a-9a81-0d5d7c1058d8",
+   "execution_count": 3,
+   "id": "0d9ea7be-31e7-4673-8563-5fdb7a9d34ac",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -67,7 +93,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "19b28a2d-f364-4479-99f4-273cfcbd59e2",
+   "id": "a44c6131-383c-4bf0-aa96-b2d2a186b347",
    "metadata": {},
    "source": [
     "# Prepare Data"
@@ -75,30 +101,18 @@
   },
   {
    "cell_type": "markdown",
-   "id": "00ce3f87-f7f4-482c-9c41-09173cdcefbb",
-   "metadata": {
-    "tags": []
-   },
+   "id": "ebef2202-2537-452c-b0b0-568864edf912",
+   "metadata": {},
    "source": [
     "## Import"
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9da64f93-2a92-46a7-8541-4bee1807745e",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851852\", h=\"16aa0a56e6\", width=600)"
-   ]
-  },
-  {
    "cell_type": "markdown",
-   "id": "4664b45c-ad3f-42e7-95c9-d1a566a31af1",
+   "id": "8ca1718b-4467-4c95-971c-fd4782701a7c",
    "metadata": {},
    "source": [
-    "**Task 3.3.1:** Complete to the create a client to connect to the MongoDB server running at `host` on port `27017`, assigns the `\"air-quality\"` database to `db`, and assigned the `\"nairobi\"` connection to `nairobi`.\n",
+    "**Task 3.4.1:** Create a client to connect to the MongoDB server running at `host` on port `27017`, then assign the `\"air-quality\"` database to `db`, and the `\"nairobi\"` collection to `nairobi`.\n",
     "\n",
     "- [<span id='technique'>Create a client object for a <span id='tool'>MongoDB</span> instance.](../%40textbook/11-databases-mongodb.ipynb#Servers-and-Clients) \n",
     "- [<span id='technique'>Access a database using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Servers-and-Clients)\n",
@@ -107,10 +121,19 @@
   },
   {
    "cell_type": "code",
-   "execution_count": null,
+   "execution_count": 4,
    "id": "9fe15e42-c61c-4d0b-8372-6c8e61409c2a",
    "metadata": {},
-   "outputs": [],
+   "outputs": [
+    {
+     "ename": "SyntaxError",
+     "evalue": "invalid syntax (768410964.py, line 1)",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;36m  Cell \u001b[0;32mIn[4], line 1\u001b[0;36m\u001b[0m\n\u001b[0;31m    client =\u001b[0m\n\u001b[0m             ^\u001b[0m\n\u001b[0;31mSyntaxError\u001b[0m\u001b[0;31m:\u001b[0m invalid syntax\n"
+     ]
+    }
+   ],
    "source": [
     "client = \n",
     "db = \n",
@@ -120,24 +143,27 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ffb6d217-6809-42ed-bd49-939b92c64d40",
+   "id": "cc06ea22-ecab-4952-8c51-b489f1fbc873",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851840\", h=\"e048425f49\", width=600)"
+    "VimeoVideo(\"665851670\", h=\"3efc0c20d4\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "2d69b42e-025e-46ac-a4cb-2623d8f155a1",
+   "id": "85cf363a-abaf-467b-800c-2b0771992d86",
    "metadata": {},
    "source": [
-    "**Task 3.3.2:** Change the `wrangle` function below so that it returns a Series of the resampled data instead of a DataFrame."
+    "**Task 3.4.2:** Change your `wrangle` function so that it has a `resample_rule` argument that allows the user to change the resampling interval. The argument default should be `\"1H\"`.\n",
+    "\n",
+    "- [What's an <span id='term'>argument?](../%40textbook/02-python-advanced.ipynb#Functions)\n",
+    "- [<span id='technique'>Include an argument in a function in <span id='tool'>Python.](../%40textbook/02-python-advanced.ipynb#Functions)"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
+   "execution_count": 5,
    "id": "7ed78dd3-1e79-453f-867e-a6a092eb80a9",
    "metadata": {},
    "outputs": [],
@@ -148,7 +174,7 @@
     "        projection={\"P2\": 1, \"timestamp\": 1, \"_id\": 0},\n",
     "    )\n",
     "\n",
-    "    # Read data into DataFrame\n",
+    "    # Read results into DataFrame\n",
     "    df = pd.DataFrame(list(results)).set_index(\"timestamp\")\n",
     "\n",
     "    # Localize timezone\n",
@@ -157,47 +183,99 @@
     "    # Remove outliers\n",
     "    df = df[df[\"P2\"] < 500]\n",
     "\n",
-    "    # Resample to 1hr window\n",
-    "    y = df[\"P2\"].resample(\"1H\").mean().fillna(method='ffill').to_frame()\n",
+    "    # Resample and forward-fill\n",
+    "    y = ...\n",
     "\n",
     "    return y"
    ]
   },
   {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "48118ed6-5d9d-418c-891c-391a3ced71b2",
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "AssertionError",
+     "evalue": "Your function should take two arguments: `'collection'`, `'resample_rule'`. Your function takes the following arguments: {'collection'}",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mAssertionError\u001b[0m                            Traceback (most recent call last)",
+      "Cell \u001b[0;32mIn[6], line 3\u001b[0m\n\u001b[1;32m      1\u001b[0m \u001b[38;5;66;03m# Check your work\u001b[39;00m\n\u001b[1;32m      2\u001b[0m func_params \u001b[38;5;241m=\u001b[39m \u001b[38;5;28mset\u001b[39m(inspect\u001b[38;5;241m.\u001b[39msignature(wrangle)\u001b[38;5;241m.\u001b[39mparameters\u001b[38;5;241m.\u001b[39mkeys())\n\u001b[0;32m----> 3\u001b[0m \u001b[38;5;28;01massert\u001b[39;00m func_params \u001b[38;5;241m==\u001b[39m \u001b[38;5;28mset\u001b[39m(\n\u001b[1;32m      4\u001b[0m     [\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mcollection\u001b[39m\u001b[38;5;124m\"\u001b[39m, \u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mresample_rule\u001b[39m\u001b[38;5;124m\"\u001b[39m]\n\u001b[1;32m      5\u001b[0m ), \u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mYour function should take two arguments: `\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mcollection\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124m`, `\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mresample_rule\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124m`. Your function takes the following arguments: \u001b[39m\u001b[38;5;132;01m{\u001b[39;00mfunc_params\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m\"\u001b[39m\n",
+      "\u001b[0;31mAssertionError\u001b[0m: Your function should take two arguments: `'collection'`, `'resample_rule'`. Your function takes the following arguments: {'collection'}"
+     ]
+    }
+   ],
+   "source": [
+    "# Check your work\n",
+    "func_params = set(inspect.signature(wrangle).parameters.keys())\n",
+    "assert func_params == set(\n",
+    "    [\"collection\", \"resample_rule\"]\n",
+    "), f\"Your function should take two arguments: `'collection'`, `'resample_rule'`. Your function takes the following arguments: {func_params}\""
+   ]
+  },
+  {
    "cell_type": "markdown",
-   "id": "18d44196-3c70-4bf7-a2e0-3e061480be1d",
+   "id": "34db0659-01e8-468a-9bc2-53450fb2cf47",
    "metadata": {},
    "source": [
-    "**Task 3.3.3:** Use your wrangle function to read the data from the `nairobi` collection into the Series `y`."
+    "**Task 3.4.3:** Use your wrangle function to read the data from the `nairobi` collection into the Series `y`."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
+   "execution_count": 7,
    "id": "51ac4862-d53e-4ec9-8c30-b97be3156a7e",
    "metadata": {},
-   "outputs": [],
+   "outputs": [
+    {
+     "ename": "AttributeError",
+     "evalue": "'ellipsis' object has no attribute 'head'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mAttributeError\u001b[0m                            Traceback (most recent call last)",
+      "Cell \u001b[0;32mIn[7], line 2\u001b[0m\n\u001b[1;32m      1\u001b[0m y \u001b[38;5;241m=\u001b[39m \u001b[38;5;241m.\u001b[39m\u001b[38;5;241m.\u001b[39m\u001b[38;5;241m.\u001b[39m\n\u001b[0;32m----> 2\u001b[0m \u001b[43my\u001b[49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mhead\u001b[49m()\n",
+      "\u001b[0;31mAttributeError\u001b[0m: 'ellipsis' object has no attribute 'head'"
+     ]
+    }
+   ],
    "source": [
-    "y = \n",
+    "y = ...\n",
     "y.head()"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": null,
-   "id": "bc377937-46d2-4b73-b79a-acf4fd37603b",
+   "execution_count": 8,
+   "id": "0d9cfefc-96c5-44d7-a6a9-e6cef8238018",
    "metadata": {},
-   "outputs": [],
+   "outputs": [
+    {
+     "ename": "AssertionError",
+     "evalue": "`y` should be a Series, not a <class 'ellipsis'>.",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mAssertionError\u001b[0m                            Traceback (most recent call last)",
+      "Cell \u001b[0;32mIn[8], line 2\u001b[0m\n\u001b[1;32m      1\u001b[0m \u001b[38;5;66;03m# Check your work\u001b[39;00m\n\u001b[0;32m----> 2\u001b[0m \u001b[38;5;28;01massert\u001b[39;00m \u001b[38;5;28misinstance\u001b[39m(y, pd\u001b[38;5;241m.\u001b[39mSeries), \u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124m`y` should be a Series, not a \u001b[39m\u001b[38;5;132;01m{\u001b[39;00m\u001b[38;5;28mtype\u001b[39m(y)\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m.\u001b[39m\u001b[38;5;124m\"\u001b[39m\n\u001b[1;32m      3\u001b[0m \u001b[38;5;28;01massert\u001b[39;00m \u001b[38;5;28mlen\u001b[39m(y) \u001b[38;5;241m==\u001b[39m \u001b[38;5;241m2928\u001b[39m, \u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124m`y` should have 2,928 observations, not \u001b[39m\u001b[38;5;132;01m{\u001b[39;00m\u001b[38;5;28mlen\u001b[39m(y)\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m.\u001b[39m\u001b[38;5;124m\"\u001b[39m\n\u001b[1;32m      4\u001b[0m \u001b[38;5;28;01massert\u001b[39;00m (\n\u001b[1;32m      5\u001b[0m     y\u001b[38;5;241m.\u001b[39misnull()\u001b[38;5;241m.\u001b[39msum() \u001b[38;5;241m==\u001b[39m \u001b[38;5;241m0\u001b[39m\n\u001b[1;32m      6\u001b[0m ), \u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mThere should be no null values in `y`. Your `y` has \u001b[39m\u001b[38;5;132;01m{\u001b[39;00my\u001b[38;5;241m.\u001b[39misnull()\u001b[38;5;241m.\u001b[39msum()\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m null values.\u001b[39m\u001b[38;5;124m\"\u001b[39m\n",
+      "\u001b[0;31mAssertionError\u001b[0m: `y` should be a Series, not a <class 'ellipsis'>."
+     ]
+    }
+   ],
    "source": [
     "# Check your work\n",
-    "assert isinstance(y, pd.Series), f\"`y` should be a Series, not type {type(y)}\"\n",
-    "assert len(y) == 2928, f\"`y` should have 2928 observations, not {len(y)}\"\n",
-    "assert y.isnull().sum() == 0"
+    "assert isinstance(y, pd.Series), f\"`y` should be a Series, not a {type(y)}.\"\n",
+    "assert len(y) == 2928, f\"`y` should have 2,928 observations, not {len(y)}.\"\n",
+    "assert (\n",
+    "    y.isnull().sum() == 0\n",
+    "), f\"There should be no null values in `y`. Your `y` has {y.isnull().sum()} null values.\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "8730fa2c-0970-42b1-bb18-d334bd8d8b2d",
+   "id": "70b6845c-24e9-4b4b-abc7-74de4f452032",
    "metadata": {},
    "source": [
     "## Explore"
@@ -206,19 +284,19 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "86d3d7a9-ac9d-47f6-8b7e-d2eeda8e5d42",
+   "id": "9f6987bf-8a54-44fa-babe-b2f60af9ce09",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851830\", h=\"85f58bc92b\", width=600)"
+    "VimeoVideo(\"665851654\", h=\"687ff8d5ee\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "a5829db3-8427-4f78-81b7-d4068ad5d480",
+   "id": "3f4b2c02-1fd5-4ed3-96de-53e3e6689318",
    "metadata": {},
    "source": [
-    "**Task 3.3.4:** Create an ACF plot for the data in `y`. Be sure to label the x-axis as `\"Lag [hours]\"` and the y-axis as `\"Correlation Coefficient\"`.\n",
+    "**Task 3.4.4:** Create an ACF plot for the data in `y`. Be sure to label the x-axis as `\"Lag [hours]\"` and the y-axis as `\"Correlation Coefficient\"`.\n",
     "\n",
     "- [What's an <span id='term'>ACF plot?](../%40textbook/17-ts-core.ipynb#ACF-Plot)\n",
     "- [<span id='technique'>Create an ACF plot using <span id='tool'>statsmodels](../%40textbook/18-ts-models.ipynb#Creating-an-ACF-Plot)"
@@ -227,32 +305,31 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "bda3cfc3-6353-4c19-806c-d91b7e44ad5c",
+   "id": "8eb507fd-e45b-4a09-8884-47ee9670f2ed",
    "metadata": {},
    "outputs": [],
    "source": [
     "fig, ax = plt.subplots(figsize=(15, 6))\n",
     "\n",
-    "plt.xlabel(\"Lag [hours]\")\n",
-    "plt.ylabel(\"Correlation Coefficient\");"
+    "..."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "4e32a266-ac58-40ab-8344-3d9023745828",
+   "id": "190544b1-b85b-41a9-baea-a653353af607",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851811\", h=\"ee3a2b5c24\", width=600)"
+    "VimeoVideo(\"665851644\", h=\"e857f05bfb\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "fbda5fe7-9fc3-424f-99f6-fc8131ae11ec",
+   "id": "816f6378-98ca-4ed6-8271-2043b66218ea",
    "metadata": {},
    "source": [
-    "**Task 3.3.5:** Create an PACF plot for the data in `y`. Be sure to label the x-axis as `\"Lag [hours]\"` and the y-axis as `\"Correlation Coefficient\"`.\n",
+    "**Task 3.4.5:** Create an PACF plot for the data in `y`. Be sure to label the x-axis as `\"Lag [hours]\"` and the y-axis as `\"Correlation Coefficient\"`.\n",
     "\n",
     "- [What's a PACF plot?](../%40textbook/17-ts-core.ipynb#PACF-Plot)\n",
     "- [Create an PACF plot using statsmodels](../%40textbook/18-ts-models.ipynb#Creating-a-PACF-Plot)"
@@ -261,14 +338,13 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c8df06e5-8c82-4f97-af26-baa3c2eaa6d6",
+   "id": "296991ff-8982-4175-9a86-57e84f418717",
    "metadata": {},
    "outputs": [],
    "source": [
     "fig, ax = plt.subplots(figsize=(15, 6))\n",
     "\n",
-    "plt.xlabel(\"Lag [hours]\")\n",
-    "plt.ylabel(\"Correlation Coefficient\");"
+    "..."
    ]
   },
   {
@@ -280,23 +356,13 @@
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "4babfeaf-69c4-4827-8c55-e3df0c482c66",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851798\", h=\"6c191cd94c\", width=600)"
-   ]
-  },
-  {
    "cell_type": "markdown",
    "id": "8ab7de17-39eb-4098-ac2d-f1202cd622b6",
    "metadata": {},
    "source": [
-    "**Task 3.3.6:** Split `y` into training and test sets. The first 95% of the data should be in your training set. The remaining 5% should be in the test set.\n",
+    "**Task 3.4.6:** Create a training set `y_train` that contains only readings from October 2018, and a test set `y_test` that contains readings from November 1, 2018.\n",
     "\n",
-    "- [<span id='technique'>Divide data into training and test sets in <span id='tool'>pandas.](../%40textbook/18-ts-models.ipynb#Splitting-the-Data-in-pandas)"
+    "- [<span id='technique'>Subset a DataFrame by selecting one or more rows in <span id='tool'>pandas.](../%40textbook/04-pandas-advanced.ipynb#Subsetting-with-Masks)"
    ]
   },
   {
@@ -306,15 +372,27 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "cutoff_test =\n",
-    "\n",
-    "y_train =\n",
-    "y_test ="
+    "y_train = ...\n",
+    "y_test = ..."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0c6ddea8-77e7-4800-834e-589ac3a17c9d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert (\n",
+    "    len(y_train) == 744\n",
+    "), f\"`y_train` should have 744 observations, not {len(y_train)}.\"\n",
+    "assert len(y_test) == 24, f\"`y_test` should have 24 observations, not {len(y_test)}.\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "3357bfd8-d9b8-4cb0-a777-4865150169ea",
+   "id": "bf970bec-f938-4fb7-a76e-41a12447991f",
    "metadata": {},
    "source": [
     "# Build Model"
@@ -330,24 +408,22 @@
   },
   {
    "cell_type": "markdown",
-   "id": "a4481ead-912b-483a-a828-1183836eb280",
+   "id": "a8c18c9a-7ef9-4df5-b2f2-d8adbfce38cd",
    "metadata": {},
    "source": [
-    "**Task 3.3.7:** Calculate the baseline mean absolute error for your model.\n",
-    "\n",
-    "- [<span id='technique'>Calculate summary statistics for a DataFrame or Series in <span id='tool'>pandas.](../%40textbook/04-pandas-advanced.ipynb#Calculate-Summary-Statistics-for-a-DataFrame-or-Series)"
+    "**Task 3.4.7:** Calculate the baseline mean absolute error for your model."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "e2acfb6f-5296-401f-856d-4d9bccc0c4a7",
+   "id": "a27c7180-4170-43ef-806b-894ec171d6ad",
    "metadata": {},
    "outputs": [],
    "source": [
-    "y_train_mean = y_train.mean()\n",
-    "y_pred_baseline = [y_train_mean] * len(y_train)\n",
-    "mae_baseline = mean_absolute_error(y_train, y_pred_baseline)\n",
+    "y_train_mean = ...\n",
+    "y_pred_baseline = ...\n",
+    "mae_baseline = ...\n",
     "\n",
     "print(\"Mean P2 Reading:\", round(y_train_mean, 2))\n",
     "print(\"Baseline MAE:\", round(mae_baseline, 2))"
@@ -355,7 +431,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "f7b59427-6cbe-4a1a-a927-81bcbacdb28f",
+   "id": "f6518765-f4f8-4b62-b667-7445caf775fa",
    "metadata": {},
    "source": [
     "## Iterate"
@@ -364,192 +440,196 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "70c66e0c-48dc-45c6-8525-21e4dd1bcd94",
+   "id": "44d979c4-9446-42da-86cd-b1fd7718682d",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851769\", h=\"94a4296cde\", width=600)"
+    "VimeoVideo(\"665851576\", h=\"36e2dc6269\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "82f28564-9154-4570-ac9a-6aee95e1fb21",
+   "id": "760d0f20-7085-409f-be9e-f45f88a7e86f",
    "metadata": {},
    "source": [
-    "**Task 3.3.8:** Instantiate an [`AutoReg`](https://www.statsmodels.org/stable/generated/statsmodels.tsa.ar_model.AutoReg.html) model and fit it to the training data `y_train`. Be sure to set the `lags` argument to `26`.\n",
+    "**Task 3.4.8:** Create ranges for possible $p$ and $q$ values. `p_params` should range between 0 and 25, by steps of 8. `q_params` should range between 0 and 3 by steps of 1.\n",
     "\n",
-    "- [What's an <span id='term'>AR model?](../%40textbook/17-ts-core.ipynb#Autoregression-Models)\n",
-    "- [<span id='technique'>Instantiate a predictor in <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Splitting-the-Data-in-pandas)\n",
-    "- [<span id='technique'>Train a model in <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Iterating)"
+    "- [What's a <span id='term'>hyperparameter?](../%40textbook/17-ts-core.ipynb#Hyperparameters)\n",
+    "- [What's an <span id='term'>iterator?](../%40textbook/02-python-advanced.ipynb#Iterators-and-Iterables-)\n",
+    "- [<span id='technique'>Create a range in <span id='tool'>Python.](../%40textbook/18-ts-models.ipynb#Hyperparameters)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b73acf9a-c29b-4506-9d5b-91035067a4a3",
+   "id": "6e0bffaa-1ebc-4b6f-8c4d-666676679739",
    "metadata": {},
    "outputs": [],
    "source": [
-    "model = "
+    "p_params = ...\n",
+    "q_params = ..."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ee52eb26-e623-4d40-8d41-49dd7cfad152",
+   "id": "58e66ebd-f69a-48c5-abea-f70549bd5420",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851746\", h=\"1a4511e883\", width=600)"
+    "VimeoVideo(\"665851476\", h=\"d60346ed30\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "3f8df0e4-7bdf-4448-a2df-7f125933242e",
+   "id": "44473e54-56e2-49c2-a790-65010bc567a5",
    "metadata": {},
    "source": [
-    "**Task 3.3.9:** Generate a list of training predictions for your model and use them to calculate your training mean absolute error. \n",
+    "**Task 3.4.9:** Complete the code below to train a model with every combination of hyperparameters in `p_params` and `q_params`. Every time the model is trained, the mean absolute error is calculated and then saved to a dictionary. If you're not sure where to start, do the code-along with Nicholas!\n",
     "\n",
-    "- [<span id='technique'>Generate in-sample predictions for a model in <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Iterating)\n",
-    "- [<span id='technique'>Calculate the mean absolute error for a list of predictions in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
+    "- [What's an <span id='term'>ARMA model?](../%40textbook/17-ts-core.ipynb#ARMA-Models)\n",
+    "- [<span id='technique'>Append an item to a list in <span id='tool'>Python.](../%40textbook/01-python-getting-started.ipynb#Appending-Items)\n",
+    "- [<span id='technique'>Calculate the mean absolute error for a list of predictions in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)\n",
+    "- [<span id='technique'>Instantiate a predictor in <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Iterating)\n",
+    "- [<span id='technique'>Train a model in <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Iterating)\n",
+    "- [<span id='technique'>Write a for loop in <span id='tool'>Python.](../%40textbook/01-python-getting-started.ipynb#Working-with-for-Loops)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b277ad1e-8eb0-4ccf-a073-295486fa247a",
-   "metadata": {},
+   "id": "d508c0a0-605e-4f6c-84a9-2d93bc405c21",
+   "metadata": {
+    "tags": []
+   },
    "outputs": [],
    "source": [
-    "y_pred = \n",
-    "training_mae = \n",
-    "print(\"Training MAE:\", training_mae)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a519ef88-5f74-414b-877c-038afa9d7111",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851744\", h=\"60d053b455\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "973c1eab-f79f-4c77-a3fe-e6a464092d3c",
-   "metadata": {},
-   "source": [
-    "**Task 3.3.10:** Use `y_train` and `y_pred` to calculate the residuals for your model.\n",
+    "# Create dictionary to store MAEs\n",
+    "mae_grid = dict()\n",
+    "# Outer loop: Iterate through possible values for `p`\n",
+    "for p in p_params:\n",
+    "    # Create key-value pair in dict. Key is `p`, value is empty list.\n",
+    "    mae_grid[p] = list()\n",
+    "    # Inner loop: Iterate through possible values for `q`\n",
+    "    for q in q_params:\n",
+    "        # Combination of hyperparameters for model\n",
+    "        order = (p, 0, q)\n",
+    "        # Note start time\n",
+    "        start_time = time.time()\n",
+    "        # Train model\n",
+    "        model = ...\n",
+    "        # Calculate model training time\n",
+    "        elapsed_time = round(time.time() - start_time, 2)\n",
+    "        print(f\"Trained ARIMA {order} in {elapsed_time} seconds.\")\n",
+    "        # Generate in-sample (training) predictions\n",
+    "        y_pred = ...\n",
+    "        # Calculate training MAE\n",
+    "        mae = ...\n",
+    "        # Append MAE to list in dictionary\n",
+    "        mae_grid[p].append(mae)\n",
     "\n",
-    "- [What's a <span id='term'>residual?](../%40textbook/12-ml-core.ipynb#Residuals)\n",
-    "- [<span id='technique'>Create new columns derived from existing columns in a DataFrame using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Adding-Columns)"
+    "print()\n",
+    "print(mae_grid)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "dad3f406-422b-4faf-a5fa-b29d60f61c0c",
+   "id": "291d4e8b-ce89-42eb-835c-3c9d5409bc2e",
    "metadata": {},
    "outputs": [],
    "source": [
-    "y_train_resid =\n",
-    "y_train_resid.tail()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "8553d7cb-6a1f-4390-b641-d12f8123cfd8",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851712\", h=\"9ff0cdba9c\", width=600)"
+    "VimeoVideo(\"665851464\", h=\"12f4080d0b\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "0d4130f7-cbcb-45d9-9b27-c27871620fcb",
+   "id": "57afa00a-1006-4180-961c-6a6352ed0eb1",
    "metadata": {},
    "source": [
-    "**Task 3.3.11:** Create a plot of `y_train_resid`.\n",
+    "**Task 3.4.10:** Organize all the MAE's from above in a DataFrame names `mae_df`. Each row represents a possible value for $q$ and each column represents a possible value for $p$. \n",
     "\n",
-    "- [<span id='technique'>Create a line plot using <span id='tool'>pandas.](../%40textbook/07-visualization-pandas.ipynb#Line-Plots)"
+    "- [<span id='technique'>Create a DataFrame from a dictionary using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Working-with-DataFrames)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "2cc7744d-cc2e-429c-84af-adf5ba487a2b",
+   "id": "c204ffbf-c2cb-40a1-a3f7-bd71c9c797d7",
    "metadata": {},
    "outputs": [],
    "source": [
-    "fig, ax = plt.subplots(figsize=(15, 6))\n"
+    "mae_df = ...\n",
+    "mae_df.round(4)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a8c3eaf6-5fb5-4465-aa42-52375ed5a435",
+   "id": "1d85b935-2077-410e-9a75-42f0c2c05e71",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851702\", h=\"b494adc297\", width=600)"
+    "VimeoVideo(\"665851453\", h=\"dfd415bc08\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "de34974c-d25d-4bf9-8b33-f5b91d346c59",
+   "id": "3cecf9db-d5c0-46d9-b7f8-234295a48d98",
    "metadata": {},
    "source": [
-    "**Task 3.3.12:** Create a histogram of `y_train_resid`.\n",
+    "**Task 3.4.11:** Create heatmap of the values in `mae_grid`. Be sure to label your x-axis `\"p values\"` and your y-axis `\"q values\"`. \n",
     "\n",
-    "- [<span id='technique'>Create a histogram using <span id='tool'>plotly express.](../%40textbook/06-visualization-matplotlib.ipynb#Histograms)"
+    "- [<span id='technique'>Create a heatmap in <span id='tool'>seaborn.](../%40textbook/09-visualization-seaborn.ipynb#Correlation-Heatmaps)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f7c63952-50da-4ff1-b781-a2eea54a5071",
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a1132cfd-28f3-4ae1-9c51-31eb5acf1e40",
+   "id": "0ae06fb4-46aa-491e-803d-04db217e0937",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851684\", h=\"d6d782a1f3\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "706b0579-4c23-4aee-ab59-10fadfb19dc6",
-   "metadata": {},
-   "source": [
-    "**Task 3.3.13:** Create an ACF plot of `y_train_resid`.\n",
+    "sns.heatmap(..., cmap=...)\n",
     "\n",
-    "- [What's an <span id='term'>ACF plot?](../%40textbook/17-ts-core.ipynb#ACF-Plot)\n",
-    "- [<span id='technique'>Create an ACF plot using <span id='tool'>statsmodels](../%40textbook/18-ts-models.ipynb#ACF-Plots)"
+    "..."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b31cb392-055d-4029-b57f-ef26f89b45c7",
+   "id": "750e45f2-7c12-4dab-b538-393cd22b5197",
    "metadata": {},
    "outputs": [],
    "source": [
-    "fig, ax = plt.subplots(figsize=(15, 6))\n"
+    "VimeoVideo(\"665851444\", h=\"8b58161f26\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "67b7658d-3e87-40c4-8a9e-aa6195bbd328",
+   "id": "d12b85ab-e750-47ec-a953-df56f327c0d8",
+   "metadata": {},
+   "source": [
+    "**Task 3.4.12:** Use the [`plot_diagnostics`](https://www.statsmodels.org/stable/generated/statsmodels.tsa.arima.model.ARIMAResults.plot_diagnostics.html) method to check the residuals for your model. Keep in mind that the plot will represent the residuals from the last model you trained, so make sure it was your best model, too!\n",
+    "\n",
+    "- [<span id='technique'>Examine time series model residuals using <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Residuals)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "41421287-4ce6-4c10-8e6d-a2298211ce6a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots(figsize=(15, 12))\n",
+    "\n",
+    "..."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "37d0bcb3-7eeb-4577-beda-4fdb91357dc9",
    "metadata": {},
    "source": [
     "## Evaluate"
@@ -558,162 +638,62 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c17200fd-545e-45b4-b538-49519d08d767",
+   "id": "c8a97415-b608-42b7-836a-76659cc01385",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851662\", h=\"72e767e121\", width=600)"
+    "VimeoVideo(\"665851439\", h=\"c48d80cdf4\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "cf6cbc76-e549-43d6-8f27-67cf049788ac",
-   "metadata": {
-    "jp-MarkdownHeadingCollapsed": true,
-    "tags": []
-   },
+   "id": "d608c20f-2c51-41db-a87c-445d1711b37b",
+   "metadata": {},
    "source": [
-    "**Task 3.3.14:** Calculate the test mean absolute error for your model.\n",
-    "\n",
-    "- [<span id='technique'>Generate out-of-sample predictions using model in <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Out-of-Sample-Predictions)\n",
-    "- [<span id='technique'>Calculate the mean absolute error for a list of predictions in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
+    "**Task 3.4.13:** Complete the code below to perform walk-forward validation for your model for the entire test set `y_test`. Store your model's predictions in the Series `y_pred_wfv`. Choose the values for $p$ and $q$ that best balance model performance and computation time. Remember: This model is going to have to train 24 times before you can see your test MAE!<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "51979f18-ff64-4d76-a350-e81377968149",
+   "id": "4f80c3d9-2226-4ce3-85ed-c5c5ec9f32e8",
    "metadata": {},
    "outputs": [],
    "source": [
-    "y_pred_test = \n",
-    "test_mae =\n",
-    "print(\"Test MAE:\", test_mae)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "7af0acb5-50f8-4cef-b757-10079aca4286",
-   "metadata": {},
-   "source": [
-    "**Task 3.3.15:** Create a DataFrame `test_predictions` that has two columns: `\"y_test\"` and `\"y_pred\"`. The first should contain the true values for your test set, and the second should contain your model's predictions. Be sure the index of `test_predictions` matches the index of `y_test`.\n",
-    "\n",
-    "- [<span id='technique'>Create a DataFrame from a dictionary using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Working-with-DataFrames)<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "02a1d44e-c3e4-4ea5-8040-cd203687c88b",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "df_pred_test = pd.DataFrame(\n",
-    "    {\"y_test\": y_test, \"y_pred\": y_pred_test}, index=y_test.index\n",
-    ")"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f7a4d03f-7be0-4043-b946-5e22a27aa4ee",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851628\", h=\"29b43e482e\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "aa368395-555c-4219-a924-15f38b79d32e",
-   "metadata": {},
-   "source": [
-    "**Task 3.3.16:** Create a time series plot for the values in `test_predictions` using plotly express. Be sure that the y-axis is properly labeled as `\"P2\"`.\n",
-    "\n",
-    "- [<span id='technique'>Create a line plot in <span id='tool'>plotly express.](../%40textbook/07-visualization-pandas.ipynb#Line-Plots)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6fe8be4e-05ed-4789-976b-93faff7b4103",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "fig = px.line(df_pred_test, labels={\"value\": \"P2\"})\n",
-    "fig.show()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "914b5af2-deca-4283-8afc-82ab25540d2f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851599\", h=\"bb30d96e43\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "85a40559-c6ea-41ed-bc53-29f0971a732a",
-   "metadata": {},
-   "source": [
-    "**Task 3.3.17:** Perform walk-forward validation for your model for the entire test set `y_test`. Store your model's predictions in the Series `y_pred_wfv`. \n",
-    "\n",
-    "- [What's <span id='term'>walk-forward validation?](../%40textbook/17-ts-core.ipynb#Walk-Forward-Validation)\n",
-    "- [<span id='technique'>Perform walk-forward validation for time series model.](../%40textbook/18-ts-models.ipynb#Walk-forward-Validation)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "92379eeb-4546-4bad-b11a-ec2477eaf6cc",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%capture\n",
-    "\n",
-    "y_pred_wfv =\n",
-    "history =\n",
+    "y_pred_wfv = pd.Series()\n",
+    "history = y_train.copy()\n",
     "for i in range(len(y_test)):\n",
-    "    pass"
+    "    model = ...\n",
+    "    next_pred = model.forecast()\n",
+    "    y_pred_wfv = y_pred_wfv.append(next_pred)\n",
+    "    history = history.append(y_test[next_pred.index])"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "81401774-34c5-4108-b4fd-18e35035be47",
+   "id": "b635d955-6efe-4f6e-96c3-aea81486aff4",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851568\", h=\"a764ab5416\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "4695b215-7312-4cd9-9e21-0603f5f9151b",
-   "metadata": {},
-   "source": [
-    "**Task 3.3.18:** Calculate the test mean absolute error for your model.\n",
-    "\n",
-    "- [<span id='technique'>Calculate the mean absolute error for a list of predictions in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)"
+    "test_mae = ...\n",
+    "print(\"Test MAE (walk forward validation):\", round(test_mae, 2))"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "1aba2273-eba8-4ace-8bbd-245fecd828f1",
+   "id": "91c69a00-498a-4f7d-a22c-7409696420e9",
    "metadata": {},
    "outputs": [],
    "source": [
-    "test_mae =\n",
+    "test_mae = mean_absolute_error(y_test, y_pred_wfv)\n",
     "print(\"Test MAE (walk forward validation):\", round(test_mae, 2))"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "6d8662e5-ab31-4eee-b0d2-0a34a207f697",
+   "id": "d439159f-15b3-4cab-9a21-2c3768279f72",
    "metadata": {},
    "source": [
     "# Communicate Results"
@@ -722,71 +702,40 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b90b7a1f-f4ad-419b-b4f1-c3e6f96f0e44",
+   "id": "f2c51a36-3332-4bd1-a2cc-62bd24d355d4",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851553\", h=\"46338036cc\", width=600)"
+    "VimeoVideo(\"665851423\", h=\"8236ff348f\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "1bbfa94d-a026-49fd-b1f6-b9d162c3aa53",
+   "id": "ef6d0d89-c652-4639-936b-3fe72a61b014",
    "metadata": {},
    "source": [
-    "**Task 3.3.19:** Print out the parameters for your trained model.\n",
+    "**Task 3.4.14:** First, generate the list of training predictions for your model. Next, create a DataFrame `df_predictions` with the true values `y_test` and your predictions `y_pred_wfv` (don't forget the index). Finally, plot `df_predictions` using plotly express. Make sure that the y-axis is labeled `\"P2\"`. \n",
     "\n",
-    "- [<span id='technique'>Access model parameters in <span id='tool'>statsmodels](../%40textbook/18-ts-models.ipynb#Communicating-the-Results)"
+    "- [<span id='technique'>Generate in-sample predictions for a model in <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Iterating)\n",
+    "- [<span id='technique'>Create a DataFrame from a dictionary using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Working-with-DataFrames)\n",
+    "- [<span id='technique'>Create a line plot in <span id='tool'>pandas.](../%40textbook/07-visualization-pandas.ipynb#Line-Plots)    "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "5f31e84c-2e76-4438-ab7c-0e96a21cc298",
-   "metadata": {
-    "tags": []
-   },
-   "outputs": [],
-   "source": []
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9c3ed2e8-8363-475f-89d7-880acd4c2516",
+   "id": "06140822-5ed2-4fbe-8852-c5a184ca5a6f",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851529\", h=\"39284d37ac\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "6c81a4e3-da69-402a-a621-7cb794b684d8",
-   "metadata": {
-    "tags": []
-   },
-   "source": [
-    "**Task 3.3.20:** Put the values for `y_test` and `y_pred_wfv` into the DataFrame `df_pred_test` (don't forget the index). Then plot `df_pred_test` using plotly express.\n",
-    "\n",
-    "- [<span id='technique'>Create a line plot in <span id='tool'>plotly express.](../%40textbook/07-visualization-pandas.ipynb#Line-Plots)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9f6d68b8-e445-4dde-9632-3dab4c581ba0",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "df_pred_test = ...\n",
-    "\n",
+    "df_predictions = ...\n",
     "fig = ...\n",
     "fig.show()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "7880901c",
+   "id": "92e7b73c",
    "metadata": {
     "deletable": false,
     "editable": false
@@ -820,7 +769,6 @@
    "pygments_lexer": "ipython3",
    "version": "3.11.0"
   },
-  "toc-autonumbering": true,
   "widgets": {
    "application/vnd.jupyter.widget-state+json": {
     "state": {},
