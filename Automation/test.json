@@ -2,98 +2,38 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "58d3e6f5-9314-480c-b4bd-f4be542a0b38",
+   "id": "3249299a-48f7-45e9-9b94-1c74fcd5989a",
    "metadata": {},
    "source": [
-    "<font size=\"+3\"><strong>3.4. ARMA Models</strong></font>"
+    "<font size=\"+3\"><strong>4.1. Wrangling Data with SQL</strong></font>"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 1,
-   "id": "2a2428fb-63b3-47b2-94c2-34501f9e3f3e",
+   "execution_count": null,
+   "id": "489eaac3-6274-4594-81fe-40708b9a7d7b",
    "metadata": {},
    "outputs": [],
    "source": [
-    "import inspect\n",
-    "import time\n",
-    "import warnings\n",
+    "import sqlite3\n",
     "\n",
-    "import matplotlib.pyplot as plt\n",
     "import pandas as pd\n",
-    "import plotly.express as px\n",
-    "import seaborn as sns\n",
-    "from IPython.display import VimeoVideo\n",
-    "from pymongo import MongoClient\n",
-    "from sklearn.metrics import mean_absolute_error\n",
-    "from statsmodels.graphics.tsaplots import plot_acf, plot_pacf\n",
-    "from statsmodels.tsa.arima.model import ARIMA\n",
-    "\n",
-    "warnings.filterwarnings(\"ignore\")"
+    "from IPython.display import VimeoVideo"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 2,
-   "id": "435e37c9-bfd3-45d6-a094-4882a785ecd8",
-   "metadata": {},
-   "outputs": [
-    {
-     "data": {
-      "text/html": [
-       "\n",
-       "        <iframe\n",
-       "            width=\"600\"\n",
-       "            height=\"300\"\n",
-       "            src=\"https://player.vimeo.com/video/665851728?h=95c59d2805\"\n",
-       "            frameborder=\"0\"\n",
-       "            allowfullscreen\n",
-       "            \n",
-       "        ></iframe>\n",
-       "        "
-      ],
-      "text/plain": [
-       "<IPython.lib.display.VimeoVideo at 0x7b4a5759b750>"
-      ]
-     },
-     "execution_count": 2,
-     "metadata": {},
-     "output_type": "execute_result"
-    }
-   ],
-   "source": [
-    "VimeoVideo(\"665851728\", h=\"95c59d2805\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "8237da8a-4242-4bd4-bf63-c40cd37ca057",
-   "metadata": {},
-   "source": [
-    "<div style=\"padding: 1em; border: 1px solid #f0ad4e; border-left: 6px solid #f0ad4e; background-color: #fcf8e3; color: #8a6d3b; border-radius: 4px;\">\n",
-    "\n",
-    "<strong>🛠️ Instruction:</strong> Locate the IP address of the machine running MongoDB and assign it to the variable <code>host</code>. Make sure to use a <strong>string</strong> (i.e., wrap the IP in quotes).<br><br>\n",
-    "\n",
-    "<strong>⚠️ Note:</strong> The IP address is <strong>dynamic</strong> — it may change every time you start the lab. Always check the current IP before proceeding.\n",
-    "\n",
-    "</div>\n",
-    "\n",
-    "<img src=\"../images/mongo_ip.png\" alt=\"MongoDB\" width=\"600\"/>\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 3,
-   "id": "0d9ea7be-31e7-4673-8563-5fdb7a9d34ac",
+   "execution_count": null,
+   "id": "6310ad95-1544-4fd8-9a78-e1217c4e81c7",
    "metadata": {},
    "outputs": [],
    "source": [
-    "host = \"...\""
+    "VimeoVideo(\"665414044\", h=\"ff34728e6a\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "a44c6131-383c-4bf0-aa96-b2d2a186b347",
+   "id": "ebf076cf-a8fa-4b68-b89b-f1d5295bdc48",
    "metadata": {},
    "source": [
     "# Prepare Data"
@@ -101,181 +41,47 @@
   },
   {
    "cell_type": "markdown",
-   "id": "ebef2202-2537-452c-b0b0-568864edf912",
+   "id": "27a78900-71b4-4fc4-a069-1e03dea39e1a",
    "metadata": {},
    "source": [
-    "## Import"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "8ca1718b-4467-4c95-971c-fd4782701a7c",
-   "metadata": {},
-   "source": [
-    "**Task 3.4.1:** Create a client to connect to the MongoDB server running at `host` on port `27017`, then assign the `\"air-quality\"` database to `db`, and the `\"nairobi\"` collection to `nairobi`.\n",
-    "\n",
-    "- [<span id='technique'>Create a client object for a <span id='tool'>MongoDB</span> instance.](../%40textbook/11-databases-mongodb.ipynb#Servers-and-Clients) \n",
-    "- [<span id='technique'>Access a database using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Servers-and-Clients)\n",
-    "- [<span id='technique'>Access a collection in a database using <span id='tool'>PyMongo.](../%40textbook/11-databases-mongodb.ipynb#Collections)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 4,
-   "id": "9fe15e42-c61c-4d0b-8372-6c8e61409c2a",
-   "metadata": {},
-   "outputs": [
-    {
-     "ename": "SyntaxError",
-     "evalue": "invalid syntax (768410964.py, line 1)",
-     "output_type": "error",
-     "traceback": [
-      "\u001b[0;36m  Cell \u001b[0;32mIn[4], line 1\u001b[0;36m\u001b[0m\n\u001b[0;31m    client =\u001b[0m\n\u001b[0m             ^\u001b[0m\n\u001b[0;31mSyntaxError\u001b[0m\u001b[0;31m:\u001b[0m invalid syntax\n"
-     ]
-    }
-   ],
-   "source": [
-    "client = \n",
-    "db = \n",
-    "nairobi = "
+    "## Connect"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "cc06ea22-ecab-4952-8c51-b489f1fbc873",
+   "id": "6561ba3b-bd4a-447f-9e37-c3f2549a41bc",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851670\", h=\"3efc0c20d4\", width=600)"
+    "VimeoVideo(\"665414180\", h=\"573444d2f6\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "85cf363a-abaf-467b-800c-2b0771992d86",
+   "id": "e656afab-fad5-4e5c-a088-5f835ae619a1",
    "metadata": {},
    "source": [
-    "**Task 3.4.2:** Change your `wrangle` function so that it has a `resample_rule` argument that allows the user to change the resampling interval. The argument default should be `\"1H\"`.\n",
+    "**Task 4.1.1:** Run the cell below to connect to the `nepal.sqlite` database. \n",
     "\n",
-    "- [What's an <span id='term'>argument?](../%40textbook/02-python-advanced.ipynb#Functions)\n",
-    "- [<span id='technique'>Include an argument in a function in <span id='tool'>Python.](../%40textbook/02-python-advanced.ipynb#Functions)"
+    "- [What's <span id='term'>ipython-sql</span>?](../%40textbook/10-databases-sql.ipynb#SQL-Databases)\n",
+    "- [What's a <span id='term'>Magics function</span>?](../%40textbook/10-databases-sql.ipynb#Magic-Commands)"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 5,
-   "id": "7ed78dd3-1e79-453f-867e-a6a092eb80a9",
+   "execution_count": null,
+   "id": "13dc1e6a-63b0-4f55-9efa-ea5b75538ac7",
    "metadata": {},
    "outputs": [],
    "source": [
-    "def wrangle(collection):\n",
-    "    results = collection.find(\n",
-    "        {\"metadata.site\": 29, \"metadata.measurement\": \"P2\"},\n",
-    "        projection={\"P2\": 1, \"timestamp\": 1, \"_id\": 0},\n",
-    "    )\n",
-    "\n",
-    "    # Read results into DataFrame\n",
-    "    df = pd.DataFrame(list(results)).set_index(\"timestamp\")\n",
-    "\n",
-    "    # Localize timezone\n",
-    "    df.index = df.index.tz_localize(\"UTC\").tz_convert(\"Africa/Nairobi\")\n",
-    "\n",
-    "    # Remove outliers\n",
-    "    df = df[df[\"P2\"] < 500]\n",
-    "\n",
-    "    # Resample and forward-fill\n",
-    "    y = ...\n",
-    "\n",
-    "    return y"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 6,
-   "id": "48118ed6-5d9d-418c-891c-391a3ced71b2",
-   "metadata": {},
-   "outputs": [
-    {
-     "ename": "AssertionError",
-     "evalue": "Your function should take two arguments: `'collection'`, `'resample_rule'`. Your function takes the following arguments: {'collection'}",
-     "output_type": "error",
-     "traceback": [
-      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
-      "\u001b[0;31mAssertionError\u001b[0m                            Traceback (most recent call last)",
-      "Cell \u001b[0;32mIn[6], line 3\u001b[0m\n\u001b[1;32m      1\u001b[0m \u001b[38;5;66;03m# Check your work\u001b[39;00m\n\u001b[1;32m      2\u001b[0m func_params \u001b[38;5;241m=\u001b[39m \u001b[38;5;28mset\u001b[39m(inspect\u001b[38;5;241m.\u001b[39msignature(wrangle)\u001b[38;5;241m.\u001b[39mparameters\u001b[38;5;241m.\u001b[39mkeys())\n\u001b[0;32m----> 3\u001b[0m \u001b[38;5;28;01massert\u001b[39;00m func_params \u001b[38;5;241m==\u001b[39m \u001b[38;5;28mset\u001b[39m(\n\u001b[1;32m      4\u001b[0m     [\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mcollection\u001b[39m\u001b[38;5;124m\"\u001b[39m, \u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mresample_rule\u001b[39m\u001b[38;5;124m\"\u001b[39m]\n\u001b[1;32m      5\u001b[0m ), \u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mYour function should take two arguments: `\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mcollection\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124m`, `\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124mresample_rule\u001b[39m\u001b[38;5;124m'\u001b[39m\u001b[38;5;124m`. Your function takes the following arguments: \u001b[39m\u001b[38;5;132;01m{\u001b[39;00mfunc_params\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m\"\u001b[39m\n",
-      "\u001b[0;31mAssertionError\u001b[0m: Your function should take two arguments: `'collection'`, `'resample_rule'`. Your function takes the following arguments: {'collection'}"
-     ]
-    }
-   ],
-   "source": [
-    "# Check your work\n",
-    "func_params = set(inspect.signature(wrangle).parameters.keys())\n",
-    "assert func_params == set(\n",
-    "    [\"collection\", \"resample_rule\"]\n",
-    "), f\"Your function should take two arguments: `'collection'`, `'resample_rule'`. Your function takes the following arguments: {func_params}\""
+    "%load_ext sql\n",
+    "%sql sqlite:///../nepal.sqlite"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "34db0659-01e8-468a-9bc2-53450fb2cf47",
-   "metadata": {},
-   "source": [
-    "**Task 3.4.3:** Use your wrangle function to read the data from the `nairobi` collection into the Series `y`."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 7,
-   "id": "51ac4862-d53e-4ec9-8c30-b97be3156a7e",
-   "metadata": {},
-   "outputs": [
-    {
-     "ename": "AttributeError",
-     "evalue": "'ellipsis' object has no attribute 'head'",
-     "output_type": "error",
-     "traceback": [
-      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
-      "\u001b[0;31mAttributeError\u001b[0m                            Traceback (most recent call last)",
-      "Cell \u001b[0;32mIn[7], line 2\u001b[0m\n\u001b[1;32m      1\u001b[0m y \u001b[38;5;241m=\u001b[39m \u001b[38;5;241m.\u001b[39m\u001b[38;5;241m.\u001b[39m\u001b[38;5;241m.\u001b[39m\n\u001b[0;32m----> 2\u001b[0m \u001b[43my\u001b[49m\u001b[38;5;241;43m.\u001b[39;49m\u001b[43mhead\u001b[49m()\n",
-      "\u001b[0;31mAttributeError\u001b[0m: 'ellipsis' object has no attribute 'head'"
-     ]
-    }
-   ],
-   "source": [
-    "y = ...\n",
-    "y.head()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 8,
-   "id": "0d9cfefc-96c5-44d7-a6a9-e6cef8238018",
-   "metadata": {},
-   "outputs": [
-    {
-     "ename": "AssertionError",
-     "evalue": "`y` should be a Series, not a <class 'ellipsis'>.",
-     "output_type": "error",
-     "traceback": [
-      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
-      "\u001b[0;31mAssertionError\u001b[0m                            Traceback (most recent call last)",
-      "Cell \u001b[0;32mIn[8], line 2\u001b[0m\n\u001b[1;32m      1\u001b[0m \u001b[38;5;66;03m# Check your work\u001b[39;00m\n\u001b[0;32m----> 2\u001b[0m \u001b[38;5;28;01massert\u001b[39;00m \u001b[38;5;28misinstance\u001b[39m(y, pd\u001b[38;5;241m.\u001b[39mSeries), \u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124m`y` should be a Series, not a \u001b[39m\u001b[38;5;132;01m{\u001b[39;00m\u001b[38;5;28mtype\u001b[39m(y)\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m.\u001b[39m\u001b[38;5;124m\"\u001b[39m\n\u001b[1;32m      3\u001b[0m \u001b[38;5;28;01massert\u001b[39;00m \u001b[38;5;28mlen\u001b[39m(y) \u001b[38;5;241m==\u001b[39m \u001b[38;5;241m2928\u001b[39m, \u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124m`y` should have 2,928 observations, not \u001b[39m\u001b[38;5;132;01m{\u001b[39;00m\u001b[38;5;28mlen\u001b[39m(y)\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m.\u001b[39m\u001b[38;5;124m\"\u001b[39m\n\u001b[1;32m      4\u001b[0m \u001b[38;5;28;01massert\u001b[39;00m (\n\u001b[1;32m      5\u001b[0m     y\u001b[38;5;241m.\u001b[39misnull()\u001b[38;5;241m.\u001b[39msum() \u001b[38;5;241m==\u001b[39m \u001b[38;5;241m0\u001b[39m\n\u001b[1;32m      6\u001b[0m ), \u001b[38;5;124mf\u001b[39m\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mThere should be no null values in `y`. Your `y` has \u001b[39m\u001b[38;5;132;01m{\u001b[39;00my\u001b[38;5;241m.\u001b[39misnull()\u001b[38;5;241m.\u001b[39msum()\u001b[38;5;132;01m}\u001b[39;00m\u001b[38;5;124m null values.\u001b[39m\u001b[38;5;124m\"\u001b[39m\n",
-      "\u001b[0;31mAssertionError\u001b[0m: `y` should be a Series, not a <class 'ellipsis'>."
-     ]
-    }
-   ],
-   "source": [
-    "# Check your work\n",
-    "assert isinstance(y, pd.Series), f\"`y` should be a Series, not a {type(y)}.\"\n",
-    "assert len(y) == 2928, f\"`y` should have 2,928 observations, not {len(y)}.\"\n",
-    "assert (\n",
-    "    y.isnull().sum() == 0\n",
-    "), f\"There should be no null values in `y`. Your `y` has {y.isnull().sum()} null values.\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "70b6845c-24e9-4b4b-abc7-74de4f452032",
+   "id": "fd7b56db-bb81-43e4-82fd-5a5fe35f7448",
    "metadata": {},
    "source": [
     "## Explore"
@@ -284,458 +90,604 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9f6987bf-8a54-44fa-babe-b2f60af9ce09",
+   "id": "6e00e2f8-47e3-4379-a2e1-aec38ee229b4",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851654\", h=\"687ff8d5ee\", width=600)"
+    "VimeoVideo(\"665414201\", h=\"4f30b7a95f\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "3f4b2c02-1fd5-4ed3-96de-53e3e6689318",
+   "id": "e976a08c-2892-4c0d-b376-1bdf4a149446",
    "metadata": {},
    "source": [
-    "**Task 3.4.4:** Create an ACF plot for the data in `y`. Be sure to label the x-axis as `\"Lag [hours]\"` and the y-axis as `\"Correlation Coefficient\"`.\n",
+    "**Task 4.1.2:** Select all rows and columns from the `sqlite_schema` table, and examine the output. \n",
     "\n",
-    "- [What's an <span id='term'>ACF plot?](../%40textbook/17-ts-core.ipynb#ACF-Plot)\n",
-    "- [<span id='technique'>Create an ACF plot using <span id='tool'>statsmodels](../%40textbook/18-ts-models.ipynb#Creating-an-ACF-Plot)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "8eb507fd-e45b-4a09-8884-47ee9670f2ed",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "fig, ax = plt.subplots(figsize=(15, 6))\n",
+    "- [What's a <span id='term'>SQL database</span>?](../%40textbook/10-databases-sql.ipynb#SQL-Databases)\n",
+    "- [What's a <span id='term'>SQL table</span>?](../%40textbook/10-databases-sql.ipynb#SQL-Databases)\n",
+    "- [<span id='technique'>Write a basic query in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
     "\n",
-    "..."
+    "How many tables are in the `nepal.sqlite` database? What information do they hold? "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "190544b1-b85b-41a9-baea-a653353af607",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851644\", h=\"e857f05bfb\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "816f6378-98ca-4ed6-8271-2043b66218ea",
-   "metadata": {},
-   "source": [
-    "**Task 3.4.5:** Create an PACF plot for the data in `y`. Be sure to label the x-axis as `\"Lag [hours]\"` and the y-axis as `\"Correlation Coefficient\"`.\n",
-    "\n",
-    "- [What's a PACF plot?](../%40textbook/17-ts-core.ipynb#PACF-Plot)\n",
-    "- [Create an PACF plot using statsmodels](../%40textbook/18-ts-models.ipynb#Creating-a-PACF-Plot)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "296991ff-8982-4175-9a86-57e84f418717",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "fig, ax = plt.subplots(figsize=(15, 6))\n",
-    "\n",
-    "..."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "c21e2444-6d8b-4e01-8033-881720d97069",
-   "metadata": {},
-   "source": [
-    "## Split"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "8ab7de17-39eb-4098-ac2d-f1202cd622b6",
-   "metadata": {},
-   "source": [
-    "**Task 3.4.6:** Create a training set `y_train` that contains only readings from October 2018, and a test set `y_test` that contains readings from November 1, 2018.\n",
-    "\n",
-    "- [<span id='technique'>Subset a DataFrame by selecting one or more rows in <span id='tool'>pandas.](../%40textbook/04-pandas-advanced.ipynb#Subsetting-with-Masks)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "c60edd04-b3d6-497b-8a30-5bdd2ea47383",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "y_train = ...\n",
-    "y_test = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0c6ddea8-77e7-4800-834e-589ac3a17c9d",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert (\n",
-    "    len(y_train) == 744\n",
-    "), f\"`y_train` should have 744 observations, not {len(y_train)}.\"\n",
-    "assert len(y_test) == 24, f\"`y_test` should have 24 observations, not {len(y_test)}.\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "bf970bec-f938-4fb7-a76e-41a12447991f",
-   "metadata": {},
-   "source": [
-    "# Build Model"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "324141f7-b68d-4128-bdc6-05d4339d31d3",
-   "metadata": {},
-   "source": [
-    "## Baseline"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "a8c18c9a-7ef9-4df5-b2f2-d8adbfce38cd",
-   "metadata": {},
-   "source": [
-    "**Task 3.4.7:** Calculate the baseline mean absolute error for your model."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a27c7180-4170-43ef-806b-894ec171d6ad",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "y_train_mean = ...\n",
-    "y_pred_baseline = ...\n",
-    "mae_baseline = ...\n",
-    "\n",
-    "print(\"Mean P2 Reading:\", round(y_train_mean, 2))\n",
-    "print(\"Baseline MAE:\", round(mae_baseline, 2))"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "f6518765-f4f8-4b62-b667-7445caf775fa",
-   "metadata": {},
-   "source": [
-    "## Iterate"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "44d979c4-9446-42da-86cd-b1fd7718682d",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851576\", h=\"36e2dc6269\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "760d0f20-7085-409f-be9e-f45f88a7e86f",
-   "metadata": {},
-   "source": [
-    "**Task 3.4.8:** Create ranges for possible $p$ and $q$ values. `p_params` should range between 0 and 25, by steps of 8. `q_params` should range between 0 and 3 by steps of 1.\n",
-    "\n",
-    "- [What's a <span id='term'>hyperparameter?](../%40textbook/17-ts-core.ipynb#Hyperparameters)\n",
-    "- [What's an <span id='term'>iterator?](../%40textbook/02-python-advanced.ipynb#Iterators-and-Iterables-)\n",
-    "- [<span id='technique'>Create a range in <span id='tool'>Python.](../%40textbook/18-ts-models.ipynb#Hyperparameters)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6e0bffaa-1ebc-4b6f-8c4d-666676679739",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "p_params = ...\n",
-    "q_params = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "58e66ebd-f69a-48c5-abea-f70549bd5420",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851476\", h=\"d60346ed30\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "44473e54-56e2-49c2-a790-65010bc567a5",
-   "metadata": {},
-   "source": [
-    "**Task 3.4.9:** Complete the code below to train a model with every combination of hyperparameters in `p_params` and `q_params`. Every time the model is trained, the mean absolute error is calculated and then saved to a dictionary. If you're not sure where to start, do the code-along with Nicholas!\n",
-    "\n",
-    "- [What's an <span id='term'>ARMA model?](../%40textbook/17-ts-core.ipynb#ARMA-Models)\n",
-    "- [<span id='technique'>Append an item to a list in <span id='tool'>Python.](../%40textbook/01-python-getting-started.ipynb#Appending-Items)\n",
-    "- [<span id='technique'>Calculate the mean absolute error for a list of predictions in <span id='tool'>scikit-learn.](../%40textbook/15-ml-regression.ipynb#Calculating-the-Mean-Absolute-Error-for-a-List-of-Predictions)\n",
-    "- [<span id='technique'>Instantiate a predictor in <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Iterating)\n",
-    "- [<span id='technique'>Train a model in <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Iterating)\n",
-    "- [<span id='technique'>Write a for loop in <span id='tool'>Python.](../%40textbook/01-python-getting-started.ipynb#Working-with-for-Loops)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "d508c0a0-605e-4f6c-84a9-2d93bc405c21",
+   "id": "56b7f670-fafd-4499-9d1a-df1881d8b583",
    "metadata": {
     "tags": []
    },
    "outputs": [],
    "source": [
-    "# Create dictionary to store MAEs\n",
-    "mae_grid = dict()\n",
-    "# Outer loop: Iterate through possible values for `p`\n",
-    "for p in p_params:\n",
-    "    # Create key-value pair in dict. Key is `p`, value is empty list.\n",
-    "    mae_grid[p] = list()\n",
-    "    # Inner loop: Iterate through possible values for `q`\n",
-    "    for q in q_params:\n",
-    "        # Combination of hyperparameters for model\n",
-    "        order = (p, 0, q)\n",
-    "        # Note start time\n",
-    "        start_time = time.time()\n",
-    "        # Train model\n",
-    "        model = ...\n",
-    "        # Calculate model training time\n",
-    "        elapsed_time = round(time.time() - start_time, 2)\n",
-    "        print(f\"Trained ARIMA {order} in {elapsed_time} seconds.\")\n",
-    "        # Generate in-sample (training) predictions\n",
-    "        y_pred = ...\n",
-    "        # Calculate training MAE\n",
-    "        mae = ...\n",
-    "        # Append MAE to list in dictionary\n",
-    "        mae_grid[p].append(mae)\n",
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "71e095c4-091f-4993-bd2d-85a0d587893c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414239\", h=\"d7319aa0a8\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0282a3e4-fd30-4806-91ca-d83b2aeb770c",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.3:** Select the `name` column from the `sqlite_schema` table, showing only rows where the **`type`** is `\"table\"`.\n",
     "\n",
-    "print()\n",
-    "print(mae_grid)"
+    "- [<span id='technique'>Select a column from a table in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
+    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "291d4e8b-ce89-42eb-835c-3c9d5409bc2e",
+   "id": "6ca7ff61-1c1f-48bf-8a83-8451ffec8b66",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851464\", h=\"12f4080d0b\", width=600)"
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9168bcc3-f615-4b08-b1eb-15c818402804",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414263\", h=\"5b7d1e875f\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "57afa00a-1006-4180-961c-6a6352ed0eb1",
+   "id": "660709df-ec88-4afb-8c1a-ee35ba6624af",
    "metadata": {},
    "source": [
-    "**Task 3.4.10:** Organize all the MAE's from above in a DataFrame names `mae_df`. Each row represents a possible value for $q$ and each column represents a possible value for $p$. \n",
+    "**Task 4.1.4:** Select all columns from the `id_map` table, limiting your results to the first five rows. \n",
     "\n",
-    "- [<span id='technique'>Create a DataFrame from a dictionary using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Working-with-DataFrames)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "c204ffbf-c2cb-40a1-a3f7-bd71c9c797d7",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "mae_df = ...\n",
-    "mae_df.round(4)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "1d85b935-2077-410e-9a75-42f0c2c05e71",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851453\", h=\"dfd415bc08\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "3cecf9db-d5c0-46d9-b7f8-234295a48d98",
-   "metadata": {},
-   "source": [
-    "**Task 3.4.11:** Create heatmap of the values in `mae_grid`. Be sure to label your x-axis `\"p values\"` and your y-axis `\"q values\"`. \n",
+    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
     "\n",
-    "- [<span id='technique'>Create a heatmap in <span id='tool'>seaborn.](../%40textbook/09-visualization-seaborn.ipynb#Correlation-Heatmaps)"
+    "How is the data organized? What type of observation does each row represent? How do you think the **`household_id`**, **`building_id`**, **`vdcmun_id`**, and **`district_id`** columns are related to each other?"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0ae06fb4-46aa-491e-803d-04db217e0937",
+   "id": "71e00903-a311-4ff3-ba3d-ea674436d4a7",
    "metadata": {},
    "outputs": [],
    "source": [
-    "sns.heatmap(..., cmap=...)\n",
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "74f04203-638b-42e1-9624-cf530a8de1fb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414293\", h=\"72fbe6b7d8\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fd7551e7-4032-492c-89d4-47b998d335fe",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.5:** How many observations are in the `id_map` table? Use the `count` command to find out.\n",
     "\n",
-    "..."
+    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "750e45f2-7c12-4dab-b538-393cd22b5197",
+   "id": "bc6cb5e0-240a-43aa-938f-0d33cfcc7a0b",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665851444\", h=\"8b58161f26\", width=600)"
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7d319b86-cc22-457f-ae21-ce0994c5e358",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414303\", h=\"6ba10ddf88\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "d12b85ab-e750-47ec-a953-df56f327c0d8",
+   "id": "35284d1c-48ea-4489-911f-9782ab50bd3d",
    "metadata": {},
    "source": [
-    "**Task 3.4.12:** Use the [`plot_diagnostics`](https://www.statsmodels.org/stable/generated/statsmodels.tsa.arima.model.ARIMAResults.plot_diagnostics.html) method to check the residuals for your model. Keep in mind that the plot will represent the residuals from the last model you trained, so make sure it was your best model, too!\n",
+    "**Task 4.1.6:** What districts are represented in the `id_map` table? Use the `distinct` command to determine the unique values in the **`district_id`** column.\n",
     "\n",
-    "- [<span id='technique'>Examine time series model residuals using <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Residuals)"
+    "- [<span id='technique'>Determine the unique values in a column using a `distinct` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "41421287-4ce6-4c10-8e6d-a2298211ce6a",
+   "id": "8f500582-54ae-42b9-846e-faf638cea156",
    "metadata": {},
    "outputs": [],
    "source": [
-    "fig, ax = plt.subplots(figsize=(15, 12))\n",
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "11c18012-06ee-49c8-aad4-1eaaad1de032",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414313\", h=\"adbab3e418\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7d1ed66e-bc1b-4b85-a276-91fe09ac8cd3",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.7:** How many buildings are there in `id_map` table? Combine the `count` and `distinct` commands to calculate the number of unique values in **`building_id`**.\n",
     "\n",
-    "..."
+    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
+    "- [<span id='technique'>Determine the unique values in a column using a `distinct` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "99ac2654-e442-4bd0-b61f-f3f20e5d921a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f59abba0-183a-4e2c-8e22-83e2b3ea1240",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414336\", h=\"5b595107c6\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "37d0bcb3-7eeb-4577-beda-4fdb91357dc9",
+   "id": "81abfb2c-f2ef-4a4f-9c95-4a77978a0225",
    "metadata": {},
    "source": [
-    "## Evaluate"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "c8a97415-b608-42b7-836a-76659cc01385",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851439\", h=\"c48d80cdf4\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "d608c20f-2c51-41db-a87c-445d1711b37b",
-   "metadata": {},
-   "source": [
-    "**Task 3.4.13:** Complete the code below to perform walk-forward validation for your model for the entire test set `y_test`. Store your model's predictions in the Series `y_pred_wfv`. Choose the values for $p$ and $q$ that best balance model performance and computation time. Remember: This model is going to have to train 24 times before you can see your test MAE!<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "4f80c3d9-2226-4ce3-85ed-c5c5ec9f32e8",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "y_pred_wfv = pd.Series()\n",
-    "history = y_train.copy()\n",
-    "for i in range(len(y_test)):\n",
-    "    model = ...\n",
-    "    next_pred = model.forecast()\n",
-    "    y_pred_wfv = y_pred_wfv.append(next_pred)\n",
-    "    history = history.append(y_test[next_pred.index])"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "b635d955-6efe-4f6e-96c3-aea81486aff4",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "test_mae = ...\n",
-    "print(\"Test MAE (walk forward validation):\", round(test_mae, 2))"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "91c69a00-498a-4f7d-a22c-7409696420e9",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "test_mae = mean_absolute_error(y_test, y_pred_wfv)\n",
-    "print(\"Test MAE (walk forward validation):\", round(test_mae, 2))"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "d439159f-15b3-4cab-9a21-2c3768279f72",
-   "metadata": {},
-   "source": [
-    "# Communicate Results"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f2c51a36-3332-4bd1-a2cc-62bd24d355d4",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665851423\", h=\"8236ff348f\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "ef6d0d89-c652-4639-936b-3fe72a61b014",
-   "metadata": {},
-   "source": [
-    "**Task 3.4.14:** First, generate the list of training predictions for your model. Next, create a DataFrame `df_predictions` with the true values `y_test` and your predictions `y_pred_wfv` (don't forget the index). Finally, plot `df_predictions` using plotly express. Make sure that the y-axis is labeled `\"P2\"`. \n",
+    "**Task 4.1.8:** For our model, we'll focus on Gorkha (district `4`). Select all columns that from `id_map`, showing only rows where the **`district_id`** is `4` and limiting your results to the first five rows.\n",
     "\n",
-    "- [<span id='technique'>Generate in-sample predictions for a model in <span id='tool'>statsmodels.](../%40textbook/18-ts-models.ipynb#Iterating)\n",
-    "- [<span id='technique'>Create a DataFrame from a dictionary using <span id='tool'>pandas.](../%40textbook/03-pandas-getting-started.ipynb#Working-with-DataFrames)\n",
-    "- [<span id='technique'>Create a line plot in <span id='tool'>pandas.](../%40textbook/07-visualization-pandas.ipynb#Line-Plots)    "
+    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
+    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "06140822-5ed2-4fbe-8852-c5a184ca5a6f",
+   "id": "f946c744-d5ac-4b7a-84eb-0aa3abfce0fe",
    "metadata": {},
    "outputs": [],
    "source": [
-    "df_predictions = ...\n",
-    "fig = ...\n",
-    "fig.show()"
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5ded755a-5f5f-4ede-98ec-0719d336234c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414344\", h=\"bdcb4a50a3\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "92e7b73c",
+   "id": "db689349-e167-43d3-8034-72774c188d4f",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.9:** How many observations in the `id_map` table come from Gorkha? Use the `count` and `WHERE` commands together to calculate the answer.\n",
+    "\n",
+    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
+    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b8c6820c-13dd-48eb-8671-d0638d5d1fe8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b5d212dc-d4ad-4ad8-b83c-1000f016dadf",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414356\", h=\"5d2bdb3813\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "838942e0-f0db-4266-beb5-3dfc9780480f",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.10:** How many buildings in the `id_map` table are in Gorkha? Combine the `count` and `distinct` commands to calculate the number of unique values in **`building_id`**, considering only rows where the **`district_id`** is `4`.\n",
+    "\n",
+    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
+    "- [<span id='technique'>Determine the unique values in a column using a `distinct` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
+    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ebadb63c-be74-4e4d-9fb3-79bcdc7b6f47",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "60c46767-8cd4-47d0-88f7-3d60d943928e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414390\", h=\"308ea86e4b\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "647b6b9a-3901-46fd-87b9-fb11e46f1f31",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.11:** Select all the columns from the `building_structure` table, and limit your results to the first five rows. \n",
+    "\n",
+    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Querying-a-Database)\n",
+    "\n",
+    "What information is in this table? What does each row represent? How does it relate to the information in the `id_map` table?<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e578867f-8a7d-4be6-95a2-7077305e81ed",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "94b28ce4-77ea-4364-bf75-02290bdeecbe",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414402\", h=\"64875c7779\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "23e5dbf0-7172-472c-846c-10cd3c00d477",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.12:** How many building are there in the `building_structure` table? Use the `count` command to find out.\n",
+    "\n",
+    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d1845a0f-bf0d-4a1d-9395-a4e957864d6f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0d9a2c79-aabd-42ec-8657-748c0da06076",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414414\", h=\"202f83f3cb\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f6e8e57f-cd33-4901-8ff7-25f37e5ef2fb",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.13:** There are over 200,000 buildings in the `building_structure` table, but how can we retrieve only buildings that are in Gorkha? Use the `JOIN` command to join the `id_map` and `building_structure` tables, showing only buildings where **`district_id`** is `4` and limiting your results to the first five rows of the new table.\n",
+    "\n",
+    "- [<span id='technique'>Create an alias for a column or table using the `AS` command in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#SELECT-and-FROM) \n",
+    "- [<span id='technique'>Merge two tables using a `JOIN` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Joining-Tables)\n",
+    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
+    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9b515665-3b59-4b0b-af20-fa0506ced7a8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "775b552c-72f0-4426-b151-814f8498119a",
+   "metadata": {},
+   "source": [
+    "In the table we just made, each row represents a unique household in Gorkha. How can we create a table where each row represents a unique building?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "eca014c7-4c97-4cf0-a4ce-f4c3dd11a65e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414450\", h=\"0fcb4dc3fa\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "36b36f82-53ab-4c62-a99a-25bc3b82bfbb",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.14:** Use the `distinct` command to create a column with all unique building IDs in the `id_map` table. `JOIN` this column with all the columns from the `building_structure` table, showing only buildings where **`district_id`** is `4` and limiting your results to the first five rows of the new table.\n",
+    "\n",
+    "- [<span id='technique'>Create an alias for a column or table using the `AS` command in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#SELECT-and-FROM) \n",
+    "- [<span id='technique'>Determine the unique values in a column using a `distinct` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
+    "- [<span id='technique'>Merge two tables using a `JOIN` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Joining-Tables)\n",
+    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
+    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3c8a6ea0-fb79-4988-b317-9c9c65d12d6b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4003ac4e-cf3d-42c7-83f9-768f22f73414",
+   "metadata": {},
+   "source": [
+    "We've combined the `id_map` and `building_structure` tables to create a table with all the buildings in Gorkha, but the final piece of data needed for our model, the damage that each building sustained in the earthquake, is in the `building_damage` table."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9d5b4fe4-8339-4743-bd36-f1946b461392",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414466\", h=\"37dde03c93\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "046ff321-45d6-4d82-bc29-4ca9dbff8d5e",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.15:** How can combine all three tables? Using the query you created in the last task as a foundation, include the **`damage_grade`** column to your table by adding a second `JOIN` for the `building_damage` table. Be sure to limit your results to the first five rows of the new table.\n",
+    "\n",
+    "- [<span id='technique'>Create an alias for a column or table using the `AS` command in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#SELECT-and-FROM) \n",
+    "- [<span id='technique'>Determine the unique values in a column using a `distinct` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
+    "- [<span id='technique'>Merge two tables using a `JOIN` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Joining-Tables)\n",
+    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
+    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "84b84662-4fed-4dfe-8eb3-c2a527ecd5e0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%sql\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6fe8ea8f-24eb-47e8-9e1e-b3a60cbc04f8",
+   "metadata": {
+    "tags": []
+   },
+   "source": [
+    "## Import"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ccfba19f-1c5f-4e6d-8fbf-f9c9b60246f0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414492\", h=\"9392e1a66e\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "38402a9c-b8e6-4b67-a510-ff5994ae02ec",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.16:** Use the [`connect`](https://docs.python.org/3/library/sqlite3.html#sqlite3.connect) method from the sqlite3 library to connect to the database. Remember that the database is located at `\"../nepal.sqlite\"`.\n",
+    "\n",
+    "- [Open a connection to a SQL database using sqlite3</span></span>.](../%40textbook/10-databases-sql.ipynb#Using-pandas-with-SQL-Databases)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0eca315d-7a16-472e-934e-f2a0803b956e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "conn = ..."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b79c2177-491e-4902-bf8e-60e4f8ea8d56",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414501\", h=\"812d482c73\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "99fa42da-85eb-4ab3-88b5-8b8823834874",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.17:** Put your last SQL query into a string and assign it to the variable `query`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "165e85ec-efc7-4bcc-bae3-96859c70561f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "query = \"\"\"...\"\"\"\n",
+    "print(query)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0546da45-3a5e-4bb4-b6a4-dec33f38faf9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414513\", h=\"c6a81b49ad\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "40cc8cb7-d701-4ab3-95a0-eb8178271baa",
+   "metadata": {},
+   "source": [
+    "**Task 4.1.18:** Use the [`read_sql`](https://pandas.pydata.org/docs/reference/api/pandas.read_sql.html#pandas-read-sql) from the pandas library to create a DataFrame from your `query`. Be sure that the **`building_id`** is set as your index column.\n",
+    "\n",
+    "- [<span id='technique'>Read SQL query into a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/10-databases-sql.ipynb#Using-pandas-with-SQL-Databases)\n",
+    "\n",
+    "<div class=\"alert alert-block alert-info\">\n",
+    "<b>Tip:</b> Your table might have two <b><code>building_id</code></b> columns, and that will make it hard to set it as the index column for your DataFrame. If you face this problem, add an alias for one of the <b><code>building_id</code></b> columns in your query using <code>AS</code>.\n",
+    "</div>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "fa9e252c-704f-4409-9eec-cbbdeb4a1e6e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = ...\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6fca7ad5-d5dd-4a5a-bb99-a1b850da9108",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert df.shape[0] == 70836, f\"`df` should have 70,836 rows, not {df.shape[0]}.\"\n",
+    "assert (\n",
+    "    df.shape[1] > 14\n",
+    "), \"`df` seems to be missing columns. Does your query combine the `id_map`, `building_structure`, and `building_damage` tables?\"\n",
+    "assert (\n",
+    "    \"damage_grade\" in df.columns\n",
+    "), \"`df` is missing the target column, `'damage_grade'`.\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "83d151b0",
    "metadata": {
     "deletable": false,
     "editable": false
@@ -749,9 +701,6 @@
   }
  ],
  "metadata": {
-  "execution": {
-   "timeout": 600
-  },
   "kernelspec": {
    "display_name": "Python 3 (ipykernel)",
    "language": "python",
