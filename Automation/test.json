@@ -2,38 +2,50 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "3249299a-48f7-45e9-9b94-1c74fcd5989a",
+   "id": "7e60ef88-f74a-4535-a61b-6108772542e0",
    "metadata": {},
    "source": [
-    "<font size=\"+3\"><strong>4.1. Wrangling Data with SQL</strong></font>"
+    "<font size=\"+3\"><strong>4.2. Predicting Damage with Logistic Regression</strong></font>"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "489eaac3-6274-4594-81fe-40708b9a7d7b",
+   "id": "060b7d53-42ca-48be-a131-3453a1338857",
    "metadata": {},
    "outputs": [],
    "source": [
     "import sqlite3\n",
+    "import warnings\n",
     "\n",
+    "import matplotlib.pyplot as plt\n",
+    "import numpy as np\n",
     "import pandas as pd\n",
-    "from IPython.display import VimeoVideo"
+    "import seaborn as sns\n",
+    "from category_encoders import OneHotEncoder\n",
+    "from IPython.display import VimeoVideo\n",
+    "from sklearn.linear_model import LogisticRegression\n",
+    "from sklearn.metrics import accuracy_score\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.pipeline import Pipeline, make_pipeline\n",
+    "from sklearn.utils.validation import check_is_fitted\n",
+    "\n",
+    "warnings.simplefilter(action=\"ignore\", category=FutureWarning)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "6310ad95-1544-4fd8-9a78-e1217c4e81c7",
+   "id": "30ae9845-8a73-465f-aea7-9768bccdce63",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665414044\", h=\"ff34728e6a\", width=600)"
+    "VimeoVideo(\"665414074\", h=\"d441543f18\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "ebf076cf-a8fa-4b68-b89b-f1d5295bdc48",
+   "id": "f89792f1-bdc7-4846-b118-4f4399c5a08b",
    "metadata": {},
    "source": [
     "# Prepare Data"
@@ -41,626 +53,66 @@
   },
   {
    "cell_type": "markdown",
-   "id": "27a78900-71b4-4fc4-a069-1e03dea39e1a",
+   "id": "d1081f1b-0e9f-4a14-ac46-ba2301b23ab7",
    "metadata": {},
    "source": [
-    "## Connect"
+    "## Import "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "6561ba3b-bd4a-447f-9e37-c3f2549a41bc",
+   "id": "10c26181-db22-488d-ab03-fc76e00412c5",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665414180\", h=\"573444d2f6\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "e656afab-fad5-4e5c-a088-5f835ae619a1",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.1:** Run the cell below to connect to the `nepal.sqlite` database. \n",
+    "def wrangle(db_path):\n",
+    "    # Connect to database\n",
+    "    conn = sqlite3.connect(db_path)\n",
     "\n",
-    "- [What's <span id='term'>ipython-sql</span>?](../%40textbook/10-databases-sql.ipynb#SQL-Databases)\n",
-    "- [What's a <span id='term'>Magics function</span>?](../%40textbook/10-databases-sql.ipynb#Magic-Commands)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "13dc1e6a-63b0-4f55-9efa-ea5b75538ac7",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%load_ext sql\n",
-    "%sql sqlite:///../nepal.sqlite"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "fd7b56db-bb81-43e4-82fd-5a5fe35f7448",
-   "metadata": {},
-   "source": [
-    "## Explore"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6e00e2f8-47e3-4379-a2e1-aec38ee229b4",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414201\", h=\"4f30b7a95f\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "e976a08c-2892-4c0d-b376-1bdf4a149446",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.2:** Select all rows and columns from the `sqlite_schema` table, and examine the output. \n",
+    "    # Construct query\n",
+    "    query = \"\"\"\n",
+    "        SELECT distinct(i.building_id) AS b_id,\n",
+    "           s.*,\n",
+    "           d.damage_grade\n",
+    "        FROM id_map AS i\n",
+    "        JOIN building_structure AS s ON i.building_id = s.building_id\n",
+    "        JOIN building_damage AS d ON i.building_id = d.building_id\n",
+    "        WHERE district_id = 4\n",
+    "    \"\"\"\n",
     "\n",
-    "- [What's a <span id='term'>SQL database</span>?](../%40textbook/10-databases-sql.ipynb#SQL-Databases)\n",
-    "- [What's a <span id='term'>SQL table</span>?](../%40textbook/10-databases-sql.ipynb#SQL-Databases)\n",
-    "- [<span id='technique'>Write a basic query in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
+    "    # Read query results into DataFrame\n",
+    "    df = .\n",
     "\n",
-    "How many tables are in the `nepal.sqlite` database? What information do they hold? "
+    "    \n",
+    "    return df"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "56b7f670-fafd-4499-9d1a-df1881d8b583",
-   "metadata": {
-    "tags": []
-   },
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "71e095c4-091f-4993-bd2d-85a0d587893c",
+   "id": "16ac25fd-341a-4f73-982c-27f5d0eb00a5",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665414239\", h=\"d7319aa0a8\", width=600)"
+    "VimeoVideo(\"665414541\", h=\"dfe22afdfb\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "0282a3e4-fd30-4806-91ca-d83b2aeb770c",
+   "id": "f3ce879a-e68f-431b-9248-9d975d2650d3",
    "metadata": {},
    "source": [
-    "**Task 4.1.3:** Select the `name` column from the `sqlite_schema` table, showing only rows where the **`type`** is `\"table\"`.\n",
-    "\n",
-    "- [<span id='technique'>Select a column from a table in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
-    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6ca7ff61-1c1f-48bf-8a83-8451ffec8b66",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9168bcc3-f615-4b08-b1eb-15c818402804",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414263\", h=\"5b7d1e875f\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "660709df-ec88-4afb-8c1a-ee35ba6624af",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.4:** Select all columns from the `id_map` table, limiting your results to the first five rows. \n",
-    "\n",
-    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
-    "\n",
-    "How is the data organized? What type of observation does each row represent? How do you think the **`household_id`**, **`building_id`**, **`vdcmun_id`**, and **`district_id`** columns are related to each other?"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "71e00903-a311-4ff3-ba3d-ea674436d4a7",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "74f04203-638b-42e1-9624-cf530a8de1fb",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414293\", h=\"72fbe6b7d8\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "fd7551e7-4032-492c-89d4-47b998d335fe",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.5:** How many observations are in the `id_map` table? Use the `count` command to find out.\n",
-    "\n",
-    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "bc6cb5e0-240a-43aa-938f-0d33cfcc7a0b",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "7d319b86-cc22-457f-ae21-ce0994c5e358",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414303\", h=\"6ba10ddf88\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "35284d1c-48ea-4489-911f-9782ab50bd3d",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.6:** What districts are represented in the `id_map` table? Use the `distinct` command to determine the unique values in the **`district_id`** column.\n",
-    "\n",
-    "- [<span id='technique'>Determine the unique values in a column using a `distinct` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "8f500582-54ae-42b9-846e-faf638cea156",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "11c18012-06ee-49c8-aad4-1eaaad1de032",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414313\", h=\"adbab3e418\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "7d1ed66e-bc1b-4b85-a276-91fe09ac8cd3",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.7:** How many buildings are there in `id_map` table? Combine the `count` and `distinct` commands to calculate the number of unique values in **`building_id`**.\n",
-    "\n",
-    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
-    "- [<span id='technique'>Determine the unique values in a column using a `distinct` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "99ac2654-e442-4bd0-b61f-f3f20e5d921a",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f59abba0-183a-4e2c-8e22-83e2b3ea1240",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414336\", h=\"5b595107c6\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "81abfb2c-f2ef-4a4f-9c95-4a77978a0225",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.8:** For our model, we'll focus on Gorkha (district `4`). Select all columns that from `id_map`, showing only rows where the **`district_id`** is `4` and limiting your results to the first five rows.\n",
-    "\n",
-    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
-    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f946c744-d5ac-4b7a-84eb-0aa3abfce0fe",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "5ded755a-5f5f-4ede-98ec-0719d336234c",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414344\", h=\"bdcb4a50a3\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "db689349-e167-43d3-8034-72774c188d4f",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.9:** How many observations in the `id_map` table come from Gorkha? Use the `count` and `WHERE` commands together to calculate the answer.\n",
-    "\n",
-    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
-    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "b8c6820c-13dd-48eb-8671-d0638d5d1fe8",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "b5d212dc-d4ad-4ad8-b83c-1000f016dadf",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414356\", h=\"5d2bdb3813\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "838942e0-f0db-4266-beb5-3dfc9780480f",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.10:** How many buildings in the `id_map` table are in Gorkha? Combine the `count` and `distinct` commands to calculate the number of unique values in **`building_id`**, considering only rows where the **`district_id`** is `4`.\n",
-    "\n",
-    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
-    "- [<span id='technique'>Determine the unique values in a column using a `distinct` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
-    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "ebadb63c-be74-4e4d-9fb3-79bcdc7b6f47",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "60c46767-8cd4-47d0-88f7-3d60d943928e",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414390\", h=\"308ea86e4b\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "647b6b9a-3901-46fd-87b9-fb11e46f1f31",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.11:** Select all the columns from the `building_structure` table, and limit your results to the first five rows. \n",
-    "\n",
-    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Querying-a-Database)\n",
-    "\n",
-    "What information is in this table? What does each row represent? How does it relate to the information in the `id_map` table?<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "e578867f-8a7d-4be6-95a2-7077305e81ed",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "94b28ce4-77ea-4364-bf75-02290bdeecbe",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414402\", h=\"64875c7779\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "23e5dbf0-7172-472c-846c-10cd3c00d477",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.12:** How many building are there in the `building_structure` table? Use the `count` command to find out.\n",
-    "\n",
-    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "d1845a0f-bf0d-4a1d-9395-a4e957864d6f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0d9a2c79-aabd-42ec-8657-748c0da06076",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414414\", h=\"202f83f3cb\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "f6e8e57f-cd33-4901-8ff7-25f37e5ef2fb",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.13:** There are over 200,000 buildings in the `building_structure` table, but how can we retrieve only buildings that are in Gorkha? Use the `JOIN` command to join the `id_map` and `building_structure` tables, showing only buildings where **`district_id`** is `4` and limiting your results to the first five rows of the new table.\n",
-    "\n",
-    "- [<span id='technique'>Create an alias for a column or table using the `AS` command in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#SELECT-and-FROM) \n",
-    "- [<span id='technique'>Merge two tables using a `JOIN` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Joining-Tables)\n",
-    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
-    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9b515665-3b59-4b0b-af20-fa0506ced7a8",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "775b552c-72f0-4426-b151-814f8498119a",
-   "metadata": {},
-   "source": [
-    "In the table we just made, each row represents a unique household in Gorkha. How can we create a table where each row represents a unique building?"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "eca014c7-4c97-4cf0-a4ce-f4c3dd11a65e",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414450\", h=\"0fcb4dc3fa\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "36b36f82-53ab-4c62-a99a-25bc3b82bfbb",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.14:** Use the `distinct` command to create a column with all unique building IDs in the `id_map` table. `JOIN` this column with all the columns from the `building_structure` table, showing only buildings where **`district_id`** is `4` and limiting your results to the first five rows of the new table.\n",
-    "\n",
-    "- [<span id='technique'>Create an alias for a column or table using the `AS` command in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#SELECT-and-FROM) \n",
-    "- [<span id='technique'>Determine the unique values in a column using a `distinct` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
-    "- [<span id='technique'>Merge two tables using a `JOIN` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Joining-Tables)\n",
-    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
-    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "3c8a6ea0-fb79-4988-b317-9c9c65d12d6b",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "4003ac4e-cf3d-42c7-83f9-768f22f73414",
-   "metadata": {},
-   "source": [
-    "We've combined the `id_map` and `building_structure` tables to create a table with all the buildings in Gorkha, but the final piece of data needed for our model, the damage that each building sustained in the earthquake, is in the `building_damage` table."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9d5b4fe4-8339-4743-bd36-f1946b461392",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414466\", h=\"37dde03c93\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "046ff321-45d6-4d82-bc29-4ca9dbff8d5e",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.15:** How can combine all three tables? Using the query you created in the last task as a foundation, include the **`damage_grade`** column to your table by adding a second `JOIN` for the `building_damage` table. Be sure to limit your results to the first five rows of the new table.\n",
-    "\n",
-    "- [<span id='technique'>Create an alias for a column or table using the `AS` command in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#SELECT-and-FROM) \n",
-    "- [<span id='technique'>Determine the unique values in a column using a `distinct` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
-    "- [<span id='technique'>Merge two tables using a `JOIN` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Joining-Tables)\n",
-    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
-    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "84b84662-4fed-4dfe-8eb3-c2a527ecd5e0",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "6fe8ea8f-24eb-47e8-9e1e-b3a60cbc04f8",
-   "metadata": {
-    "tags": []
-   },
-   "source": [
-    "## Import"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "ccfba19f-1c5f-4e6d-8fbf-f9c9b60246f0",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414492\", h=\"9392e1a66e\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "38402a9c-b8e6-4b67-a510-ff5994ae02ec",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.16:** Use the [`connect`](https://docs.python.org/3/library/sqlite3.html#sqlite3.connect) method from the sqlite3 library to connect to the database. Remember that the database is located at `\"../nepal.sqlite\"`.\n",
-    "\n",
-    "- [Open a connection to a SQL database using sqlite3</span></span>.](../%40textbook/10-databases-sql.ipynb#Using-pandas-with-SQL-Databases)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0eca315d-7a16-472e-934e-f2a0803b956e",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "conn = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "b79c2177-491e-4902-bf8e-60e4f8ea8d56",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414501\", h=\"812d482c73\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "99fa42da-85eb-4ab3-88b5-8b8823834874",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.17:** Put your last SQL query into a string and assign it to the variable `query`."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "165e85ec-efc7-4bcc-bae3-96859c70561f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "query = \"\"\"...\"\"\"\n",
-    "print(query)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0546da45-3a5e-4bb4-b6a4-dec33f38faf9",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414513\", h=\"c6a81b49ad\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "40cc8cb7-d701-4ab3-95a0-eb8178271baa",
-   "metadata": {},
-   "source": [
-    "**Task 4.1.18:** Use the [`read_sql`](https://pandas.pydata.org/docs/reference/api/pandas.read_sql.html#pandas-read-sql) from the pandas library to create a DataFrame from your `query`. Be sure that the **`building_id`** is set as your index column.\n",
+    "**Task 4.2.1:** Complete the `wrangle` function above so that the it returns the results of `query` as a DataFrame. Be sure that the index column is set to `\"b_id\"`. Also, the path to the SQLite database is `\"../nepal.sqlite\"`.\n",
     "\n",
     "- [<span id='technique'>Read SQL query into a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/10-databases-sql.ipynb#Using-pandas-with-SQL-Databases)\n",
-    "\n",
-    "<div class=\"alert alert-block alert-info\">\n",
-    "<b>Tip:</b> Your table might have two <b><code>building_id</code></b> columns, and that will make it hard to set it as the index column for your DataFrame. If you face this problem, add an alias for one of the <b><code>building_id</code></b> columns in your query using <code>AS</code>.\n",
-    "</div>"
+    "- [<span id='technique'>Write a function in <span id='tool'>Python</span></span>.](../%40textbook/02-python-advanced.ipynb#Functions)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "fa9e252c-704f-4409-9eec-cbbdeb4a1e6e",
+   "id": "67a529fc-0e26-48b7-aac6-99b6eaa78698",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -671,23 +123,825 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "6fca7ad5-d5dd-4a5a-bb99-a1b850da9108",
+   "id": "28fe1d53-28e1-4a0d-bf02-e9ea3e256e07",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Check your work\n",
-    "assert df.shape[0] == 70836, f\"`df` should have 70,836 rows, not {df.shape[0]}.\"\n",
-    "assert (\n",
-    "    df.shape[1] > 14\n",
-    "), \"`df` seems to be missing columns. Does your query combine the `id_map`, `building_structure`, and `building_damage` tables?\"\n",
-    "assert (\n",
-    "    \"damage_grade\" in df.columns\n",
-    "), \"`df` is missing the target column, `'damage_grade'`.\""
+    "assert df.shape[0] == 70836, f\"`df` should have 70,836 rows, not {df.shape[0]}.\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "83d151b0",
+   "id": "87f29296-dd21-4313-8dfe-003e314fd285",
+   "metadata": {},
+   "source": [
+    "There seem to be several features in `df` with information about the condition of a property after the earthquake."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a1447c19-b711-4160-8346-f832548c7cfa",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414560\", h=\"ad4bba19ed\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f8063973-6854-4301-9d96-2cf5ab715d6f",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.2:** Add to your wrangle function so that these features are dropped from the DataFrame. Don't forget to rerun all the cells above. \n",
+    "\n",
+    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)\n",
+    "- [<span id='technique'>Subset a DataFrame's columns based on column names in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7d0fb999-2922-40b9-a089-2cf9f696f563",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(df.info())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6504254f-f094-4934-8433-cccda372f896",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert (\n",
+    "    df.filter(regex=\"post_eq\").shape[1] == 0\n",
+    "), \"`df` still has leaky features. Try again!\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4780a879-483f-4c34-bc94-2d7facbbe541",
+   "metadata": {},
+   "source": [
+    "We want to build a **binary classification** model, but our current target `\"damage_grade\"` has more than two categories."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2dae1b0c-a4f8-4a73-a486-22dae569bf7c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414603\", h=\"12b3d2f23e\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8acbb2b6-be6e-4cad-b78e-780de0071c52",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.3:** Add to your wrangle function so that it creates a new target column `\"severe_damage\"`. For buildings where the `\"damage_grade\"` is Grade 4 or above, `\"severe_damage\"` should be `1`. For all other buildings, `\"severe_damage\"` should be `0`. Don't forget to drop `\"damage_grade\"` to avoid leakage, and rerun all the cells above.\n",
+    "\n",
+    "- [<span id='technique'>Access a substring in a Series using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Access-a-substring-in-a-Series)\n",
+    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)\n",
+    "- [<span id='technique'>Recast a column as a different data type in <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Recasting-Data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "90be38c4-2c57-4bd4-8cba-ab8f1623ed1a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(df[\"severe_damage\"].value_counts())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b08cee97-7a8f-4cc0-80d4-a974f327f4db",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert (\n",
+    "    \"damage_grade\" not in df.columns\n",
+    "), \"Your DataFrame should not include the `'damage_grade'` column.\"\n",
+    "assert (\n",
+    "    \"severe_damage\" in df.columns\n",
+    "), \"Your DataFrame is missing the `'severe_damage'` column.\"\n",
+    "assert (\n",
+    "    df[\"severe_damage\"].value_counts().shape[0] == 2\n",
+    "), f\"The `'damage_grade'` column should have only two unique values, not {df['severe_damage'].value_counts().shape[0]}\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "069b72f7-0e18-4bc0-8e3a-57173f20c775",
+   "metadata": {},
+   "source": [
+    "## Explore"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f5166d21-b3ef-4d6d-9c2e-13de228009ed",
+   "metadata": {},
+   "source": [
+    "Since our model will be a type of linear model, we need to make sure there's no issue with multicollinearity in our dataset."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5b1ad56c-58ba-4357-ad9d-47d073d9706c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414636\", h=\"d34256b4e3\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0529e84c-3043-48e6-bac1-e292fca82eaa",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.4:** Plot a correlation heatmap of the remaining numerical features in `df`. Since `\"severe_damage\"` will be your target, you don't need to include it in your heatmap. \n",
+    "\n",
+    "- [What's a <span id='term'>correlation coefficient</span>?](../%40textbook/05-pandas-summary-statistics.ipynb#Correlations)\n",
+    "- [What's a <span id='term'>heatmap</span>?](../%40textbook/09-visualization-seaborn.ipynb#Correlation-Heatmaps)\n",
+    "- [<span id='technique'>Create a correlation matrix in <span id='tool'>pandas</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Correlation-Matrices)\n",
+    "- [<span id='technique'>Create a heatmap in <span id='tool'>seaborn</span></span>.](../%40textbook/09-visualization-seaborn.ipynb#Correlation-Heatmaps)\n",
+    "\n",
+    "Do you see any features that you need to drop?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b91926e6-d776-48b7-86da-74f9751420bc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create correlation matrix\n",
+    "correlation = ...\n",
+    "# Plot heatmap of `correlation`\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "64af1c85-670f-4f76-a593-bfd31e8b95b2",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.5:** Change `wrangle` function so that it drops the `\"count_floors_pre_eq\"` column. Don't forget to rerun all the cells above. \n",
+    "\n",
+    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d5aa34c3-05d0-4c0e-908e-45e74336b652",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert (\n",
+    "    \"count_floors_pre_eq\" not in df.columns\n",
+    "), \"Did you drop the `'count_floors_pre_eq'` column?\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "eabbf0ab-7f0d-4970-9f2e-8e3637667220",
+   "metadata": {},
+   "source": [
+    "Before we build our model, let's see if we can identify any obvious differences between houses that were severely damaged in the earthquake (`\"severe_damage\"==1`) those that were not (`\"severe_damage\"==0`). Let's start with a numerical feature. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c0cfbb95-533e-4336-a34d-c930dd405636",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414667\", h=\"f39c2c21bc\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "86449de0-fc89-44bd-8871-f0b54a005753",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.6:** Use seaborn to create a boxplot that shows the distributions of the `\"height_ft_pre_eq\"` column for both groups in the `\"severe_damage\"` column. Remember to label your axes. \n",
+    "\n",
+    "- [What's a <span id='term'>boxplot</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Boxplots)\n",
+    "- [<span id='technique'>Create a boxplot using <span id='tool'>Matplotlib</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Boxplots)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "585e56e5-c959-4884-967b-734a1f6b77f0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create boxplot\n",
+    "\n",
+    "# Label axes\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "606ed2b2-81a3-4e65-adc5-8d2e49664902",
+   "metadata": {},
+   "source": [
+    "Before we move on to the many categorical features in this dataset, it's a good idea to see the balance between our two classes. What percentage were severely damaged, what percentage were not? "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "49c5d457-bf29-4820-a64d-d459f5d33cc7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414684\", h=\"81295d5bdb\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d8a81528-deb5-4f3d-9f63-3e813b9033ab",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.7:** Create a bar chart of the value counts for the `\"severe_damage\"` column. You want to calculate the relative frequencies of the classes, not the raw count, so be sure to set the `normalize` argument to `True`.\n",
+    "\n",
+    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)\n",
+    "- [What's a <span id='technique'>majority class</span>?](../%40textbook/14-ml-classification.ipynb#Majority-and-Minority-Classes)\n",
+    "- [What's a <span id='technique'>minority class</span>?](../%40textbook/14-ml-classification.ipynb#Majority-and-Minority-Classes)\n",
+    "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)\n",
+    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2e6a67db-8cf3-4070-b23d-01a91dbdceec",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot value counts of `\"severe_damage\"`\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4a3e97d2-526d-4a0e-8515-c0dcb376fa9f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414697\", h=\"ee2d4f28c6\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "110128d4-d927-47a0-a3b0-ee5f2ac66129",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.8:** Create two variables, `majority_class_prop` and `minority_class_prop`, to store the normalized value counts for the two classes in `df[\"severe_damage\"]`. \n",
+    "\n",
+    "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "fffca415-1416-445d-9ba4-4b78a7993606",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "majority_class_prop, minority_class_prop = ...\n",
+    "print(majority_class_prop, minority_class_prop)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "23b3197e-9a0a-48f4-bcaf-e296903ef563",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert (\n",
+    "    majority_class_prop < 1\n",
+    "), \"`majority_class_prop` should be a floating point number between 0 and 1.\"\n",
+    "assert (\n",
+    "    minority_class_prop < 1\n",
+    "), \"`minority_class_prop` should be a floating point number between 0 and 1.\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2346cd49-dd3c-4c02-a4d7-3a94881c633d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414718\", h=\"6a1e0c1e53\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a88eec5e-6109-4d80-a749-1a69d7d3ab4f",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.9:** Are buildings with certain foundation types more likely to suffer severe damage? Create a pivot table of `df` where the index is `\"foundation_type\"` and the values come from the `\"severe_damage\"` column, aggregated by the mean.\n",
+    "\n",
+    "- [What's a <span id='term'>pivot table</span>?](../%40textbook/04-pandas-advanced.ipynb#Pivot-Tables)\n",
+    "- [<span id='technique'>Reshape a DataFrame based on column values in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Reshape-a-DataFrame-based-on-column-values)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "151f7bf0-2f9f-4c06-90fd-1865ebf50c54",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create pivot table\n",
+    "foundation_pivot = ...\n",
+    "foundation_pivot"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0cd7daea-8831-41d8-b529-d421f48dfc67",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414734\", h=\"46de83f96e\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "518ed69b-bf02-46bd-a9c9-97611f8df39f",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.10:** How do the proportions in `foundation_pivot` compare to the proportions for our majority and minority classes? Plot `foundation_pivot` as horizontal bar chart, adding vertical lines at the values for `majority_class_prop` and `minority_class_prop`.\n",
+    "\n",
+    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)\n",
+    "- [<span id='technique'>Add a vertical or horizontal line across a plot using <span id='term'>Matplotlib</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Add-a-vertical-or-horizontal-line-across-a-plot)\n",
+    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "13a57b45-1d64-4acb-886c-5382ffbcc9c2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot bar chart of `foundation_pivot`\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9023dc16-7f70-4d51-8313-525d8eb4c206",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414748\", h=\"8549a0f89c\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "555b8f43-bae6-45a3-a08e-8686ef7da5db",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.11:** Combine the [`select_dtypes`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.select_dtypes.html) and [`nunique`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.nunique.html) methods to see if there are any high- or low-cardinality categorical features in the dataset. \n",
+    "\n",
+    "- [What are <span id='term'>high- and low-cardinality features</span>?](../%40textbook/14-ml-classification.ipynb#High-cardinality-Features)\n",
+    "- [<span id='technique'>Determine the unique values in a column using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Determine-the-unique-values-in-a-column) \n",
+    "- [<span id='technique'>Subset a DataFrame's columns based on the column data types in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Subset-the-Columns-of-a-DataFrame-Based-on-Data-Types)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c2e39138-98f4-4279-b8bd-b5ab243ab1cc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check for high- and low-cardinality categorical features\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c3806583-4ccf-45bb-9f30-02a95e707345",
+   "metadata": {
+    "tags": []
+   },
+   "source": [
+    "## Split"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "01991064-e0a6-4b8b-a22f-c6cc3a820ee7",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.12:** Create your feature matrix `X` and target vector `y`. Your target is `\"severe_damage\"`. \n",
+    "\n",
+    "- [What's a <span id='term'>feature matrix</span>?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
+    "- [What's a <span id='term'>target vector</span>?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
+    "- [<span id='technique'>Subset a DataFrame by selecting one or more columns in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns) \n",
+    "- [<span id='technique'>Select a Series from a DataFrame in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Combine-multiple-categories-in-a-Series) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "9d7fef15-0678-4c4c-a2f2-84ee12cc50e3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "target = \"severe_damage\"\n",
+    "X = ...\n",
+    "y = ..."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "98d65285-4832-4502-818b-40074ea02fbc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414769\", h=\"1bfddf07b2\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2f90dce4-5880-4fff-acfa-9099e2c8141a",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.13:** Divide your data (`X` and `y`) into training and test sets using a randomized train-test split. Your test set should be 20% of your total data. And don't forget to set a `random_state` for reproducibility. \n",
+    "\n",
+    "- [<span id='technique'>Perform a randomized train-test split using <span id='tool'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Randomized-Train-Test-split)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "471fa464-bb90-4a52-af2f-73266e53a300",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X_train, X_test, y_train, y_test = ...\n",
+    "\n",
+    "print(\"X_train shape:\", X_train.shape)\n",
+    "print(\"y_train shape:\", y_train.shape)\n",
+    "print(\"X_test shape:\", X_test.shape)\n",
+    "print(\"y_test shape:\", y_test.shape)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ac0145e4-d0bb-4ba6-8b63-27da32fe4910",
+   "metadata": {},
+   "source": [
+    "<div class=\"alert alert-block alert-info\">\n",
+    "    <p><b>Frequent Question:</b> Why do we set the random state to <code>42</code>?</p>\n",
+    "    <p><b>Answer:</b> The truth is you can pick any integer when setting a random state. The number you choose doesn't affect the results of your project; it just makes sure that your work is reproducible so that others can verify it. However, lots of people choose <code>42</code> because it appears in a well-known work of science fiction called <a href='https://en.wikipedia.org/wiki/42_(number)#The_Hitchhiker's_Guide_to_the_Galaxy'>The Hitchhiker's Guide to the Galaxy</a>. In short, it's an inside joke. 😉</p>\n",
+    "</div>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b50c5f58-1635-4b63-bfc0-102d63139859",
+   "metadata": {
+    "tags": []
+   },
+   "source": [
+    "# Build Model"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fafdd5ca-bde6-4cf0-a8ce-94286b4494cb",
+   "metadata": {},
+   "source": [
+    "## Baseline"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "90073acd-0f79-4338-a358-4b7ac661b33c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414807\", h=\"c997c58720\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ea9a15aa-2f2f-40de-a606-602eb9281fde",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.14:** Calculate the baseline accuracy score for your model.\n",
+    "\n",
+    "- [What's <span id='tool'>accuracy score</span>?](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)\n",
+    "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a65edada-56fe-454a-a38d-bbbb0ddb2f86",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "acc_baseline = ...\n",
+    "print(\"Baseline Accuracy:\", round(acc_baseline, 2))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b4098e3e-72dd-4426-847b-7bdc33bcf15b",
+   "metadata": {},
+   "source": [
+    "## Iterate"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c61da634-dff0-4f0c-b815-c415effb0e05",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414835\", h=\"1d8673223e\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f89c7494-dac1-4cdf-bf32-87eed972b0ed",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.15:** Create a pipeline named `model` that contains a `OneHotEncoder` transformer and a `LogisticRegression` predictor. Be sure you set the `use_cat_names` argument for your transformer to `True`. Then fit it to the training data. \n",
+    "\n",
+    "- [What's <span id='term'>logistic regression</span>?](../%40textbook/14-ml-classification.ipynb#Logistic-Regression)\n",
+    "- [What's <span id='term'>one-hot encoding</span>?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)\n",
+    "- [<span id='technique'>Create a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Creating-a-Pipeline-in-scikit-learn)\n",
+    "- [<span id='technique'>Fit a model to training data in <span id='tool'>scikit-learn</span></span>.](../%40textbook/15-ml-regression.ipynb#Fitting-a-Model-to-Training-Data)\n",
+    "\n",
+    "<div class=\"alert alert-block alert-info\">\n",
+    "<b>Tip:</b> If you get a <code>ConvergenceWarning</code></b> when you fit your model to the training data, don't worry. This can sometimes happen with logistic regression models. Try setting the <code>max_iter</code> argument in your predictor to <code>1000</code>.\n",
+    "</div>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "62a7ee88-52a2-4461-9b07-705a9abe6f18",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Build model\n",
+    "model = ...\n",
+    "# Fit model to training data\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b2c6ae76-43f4-4c3b-936a-f0c794c03108",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert isinstance(\n",
+    "    model, Pipeline\n",
+    "), f\"`model` should be a Pipeline, not type {type(model)}.\"\n",
+    "assert isinstance(\n",
+    "    model[0], OneHotEncoder\n",
+    "), f\"The first step in your Pipeline should be a OneHotEncoder, not type {type(model[0])}.\"\n",
+    "assert isinstance(\n",
+    "    model[-1], LogisticRegression\n",
+    "), f\"The last step in your Pipeline should be LogisticRegression, not type {type(model[-1])}.\"\n",
+    "check_is_fitted(model)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "19634c38-c36f-48b3-9d82-8a89e33b6eb4",
+   "metadata": {},
+   "source": [
+    "## Evaluate"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0b17ddd7-0b35-4eea-af1f-5a15bff3a8af",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414885\", h=\"f35ff0e23e\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "22932c04-a053-499c-bd08-66de0d532d0f",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.16:** Calculate the training and test accuracy scores for your models. \n",
+    "\n",
+    "- [<span id='technique'>Calculate the accuracy score for a model in <span id='term'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)\n",
+    "- [<span id='technique'>Generate predictions using a trained model in <span id='term'>scikit-learn</span></span>.](../%40textbook/15-ml-regression.ipynb#Generating-Predictions-Using-a-Trained-Model)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "81c25ba4-de2d-44cc-89fe-7240cc3a0c4a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "acc_train = ...\n",
+    "acc_test = ...\n",
+    "\n",
+    "print(\"Training Accuracy:\", round(acc_train, 2))\n",
+    "print(\"Test Accuracy:\", round(acc_test, 2))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "88aefbd7-2d94-4f4e-bfc6-b0ac4ef3fed9",
+   "metadata": {},
+   "source": [
+    "# Communicate"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5d17c2ce-fc0d-42b8-aeb9-28aba9e4f8b8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414902\", h=\"f9bdbe9e75\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "54a110d0-ee26-4338-a3da-2a3138d5f9c4",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.17:** Instead of using the `predict` method with your model, try `predict_proba` with your training data. How does the `predict_proba` output differ than that of `predict`? What does it represent?\n",
+    "\n",
+    "- [<span id='technique'>Generate probability estimates using a trained model in <span id='tool'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Probability-Estimates)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3b91ad42-a1d9-49d5-be9f-d442991c7c2e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "y_train_pred_proba = ...\n",
+    "print(y_train_pred_proba[:5])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "044787eb-ef3a-498d-9548-2c8ffdcacbb2",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.18:** Extract the feature names and importances from your `model`.\n",
+    "\n",
+    "- [<span id='technique'>Access an object in a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "13ca314b-5fa3-44d8-bc62-15dc165859a5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "features = ...\n",
+    "importances = ..."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0d4cb96d-6f1a-45b2-91b9-b11a2ed36d42",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414916\", h=\"c0540604cd\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2aedeb5d-617e-4da1-8828-664467856cfc",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.19:** Create a pandas Series named `odds_ratios`, where the index is `features` and the values are your the exponential of the `importances`. How does `odds_ratios` for this model look different from the other linear models we made in projects 2 and 3?\n",
+    "\n",
+    "- [<span id='technique'>Create a Series in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7d4d29e3-ce90-4df2-822b-4f83e3ecfcd7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "odds_ratios = ...\n",
+    "odds_ratios.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "24d7fbd9-226e-4d9a-8910-7271b2d51c79",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414943\", h=\"56eb74d93e\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "165549de-8b20-4360-9f3f-fff29f525efc",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.20:** Create a horizontal bar chart with the five largest coefficients from `odds_ratios`. Be sure to label your x-axis `\"Odds Ratio\"`.\n",
+    "\n",
+    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)\n",
+    "- [<span id='technique'>Create a bar chart using <span id='tool'>Matplotlib</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "24d9f874-ddf8-402d-abb3-d537fe7d81a7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Horizontal bar chart, five largest coefficients\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ae6ff145-74e6-40ac-93a1-575644719606",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665414964\", h=\"a61b881450\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "53ab1506-5334-48d2-8863-53e9dee87777",
+   "metadata": {},
+   "source": [
+    "**Task 4.2.21:** Create a horizontal bar chart with the five smallest coefficients from `odds_ratios`. Be sure to label your x-axis `\"Odds Ratio\"`.\n",
+    "\n",
+    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)\n",
+    "- [<span id='technique'>Create a bar chart using <span id='tool'>Matplotlib</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "da47fcfc-aed1-41c7-8a9b-7b758b7185e6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Horizontal bar chart, five smallest coefficients\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "52bc3d24",
    "metadata": {
     "deletable": false,
     "editable": false
