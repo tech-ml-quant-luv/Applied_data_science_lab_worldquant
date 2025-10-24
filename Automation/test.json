@@ -2,16 +2,16 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "7e60ef88-f74a-4535-a61b-6108772542e0",
+   "id": "76852d9a-e498-4f6f-818e-a4a95a672c06",
    "metadata": {},
    "source": [
-    "<font size=\"+3\"><strong>4.2. Predicting Damage with Logistic Regression</strong></font>"
+    "<font size=\"+3\"><strong>4.3. Predicting Damage with Decision Trees</strong></font>"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "060b7d53-42ca-48be-a131-3453a1338857",
+   "id": "574bf00b-4278-4d61-a496-c4f147cd2559",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -19,15 +19,13 @@
     "import warnings\n",
     "\n",
     "import matplotlib.pyplot as plt\n",
-    "import numpy as np\n",
     "import pandas as pd\n",
-    "import seaborn as sns\n",
-    "from category_encoders import OneHotEncoder\n",
+    "from category_encoders import OrdinalEncoder\n",
     "from IPython.display import VimeoVideo\n",
-    "from sklearn.linear_model import LogisticRegression\n",
     "from sklearn.metrics import accuracy_score\n",
     "from sklearn.model_selection import train_test_split\n",
     "from sklearn.pipeline import Pipeline, make_pipeline\n",
+    "from sklearn.tree import DecisionTreeClassifier, plot_tree\n",
     "from sklearn.utils.validation import check_is_fitted\n",
     "\n",
     "warnings.simplefilter(action=\"ignore\", category=FutureWarning)"
@@ -36,16 +34,16 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "30ae9845-8a73-465f-aea7-9768bccdce63",
+   "id": "c69c218b-8fbb-45f0-925f-0fabdcad695f",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665414074\", h=\"d441543f18\", width=600)"
+    "VimeoVideo(\"665414130\", h=\"71649d291e\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "f89792f1-bdc7-4846-b118-4f4399c5a08b",
+   "id": "be63124d-1ffb-486b-ad8a-b64d1ff35f02",
    "metadata": {},
    "source": [
     "# Prepare Data"
@@ -53,16 +51,16 @@
   },
   {
    "cell_type": "markdown",
-   "id": "d1081f1b-0e9f-4a14-ac46-ba2301b23ab7",
+   "id": "80613140-d7f4-4661-874e-bab6ad500f30",
    "metadata": {},
    "source": [
-    "## Import "
+    "## Import"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "10c26181-db22-488d-ab03-fc76e00412c5",
+   "id": "e55f3ea5-f30f-4428-a12c-d7b4611fd42d",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -82,28 +80,36 @@
     "    \"\"\"\n",
     "\n",
     "    # Read query results into DataFrame\n",
-    "    df = .\n",
+    "    df = pd.read_sql(query, conn, index_col=\"b_id\")\n",
     "\n",
-    "    \n",
+    "    # Identify leaky columns\n",
+    "    drop_cols = [col for col in df.columns if \"post_eq\" in col]\n",
+    "\n",
+    "    # Add high-cardinality / redundant column\n",
+    "    drop_cols.append(\"building_id\")\n",
+    "\n",
+    "    # Create binary target column\n",
+    "    df[\"damage_grade\"] = df[\"damage_grade\"].str[-1].astype(int)\n",
+    "    df[\"severe_damage\"] = (df[\"damage_grade\"] > 3).astype(int)\n",
+    "\n",
+    "    # Drop old target\n",
+    "    drop_cols.append(\"damage_grade\")\n",
+    "\n",
+    "    # Drop multicollinearity column\n",
+    "    drop_cols.append(\"count_floors_pre_eq\")\n",
+    "\n",
+    "    # Drop columns\n",
+    "    df.drop(columns=drop_cols, inplace=True)\n",
+    "\n",
     "    return df"
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "16ac25fd-341a-4f73-982c-27f5d0eb00a5",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414541\", h=\"dfe22afdfb\", width=600)"
-   ]
-  },
-  {
    "cell_type": "markdown",
-   "id": "f3ce879a-e68f-431b-9248-9d975d2650d3",
+   "id": "e1834f31-fabd-455d-870f-2964f8864bb9",
    "metadata": {},
    "source": [
-    "**Task 4.2.1:** Complete the `wrangle` function above so that the it returns the results of `query` as a DataFrame. Be sure that the index column is set to `\"b_id\"`. Also, the path to the SQLite database is `\"../nepal.sqlite\"`.\n",
+    "**Task 4.3.1:** Use the `wrangle` function above to import your data set into the DataFrame `df`. The path to the SQLite database is `\"../nepal.sqlite\"`\n",
     "\n",
     "- [<span id='technique'>Read SQL query into a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/10-databases-sql.ipynb#Using-pandas-with-SQL-Databases)\n",
     "- [<span id='technique'>Write a function in <span id='tool'>Python</span></span>.](../%40textbook/02-python-advanced.ipynb#Functions)"
@@ -112,7 +118,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "67a529fc-0e26-48b7-aac6-99b6eaa78698",
+   "id": "cae72442-8260-4597-980a-65f593d2c4f8",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -123,431 +129,18 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "28fe1d53-28e1-4a0d-bf02-e9ea3e256e07",
+   "id": "325e89ff-f91f-4a96-8690-bc3fc936bd53",
    "metadata": {},
    "outputs": [],
    "source": [
     "# Check your work\n",
-    "assert df.shape[0] == 70836, f\"`df` should have 70,836 rows, not {df.shape[0]}.\""
+    "assert df.shape[0] == 70836, f\"`df` should have 70,836 rows, not {df.shape[0]}.\"\n",
+    "assert df.shape[1] == 12, f\"`df` should have 12 columns, not {df.shape[1]}.\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "87f29296-dd21-4313-8dfe-003e314fd285",
-   "metadata": {},
-   "source": [
-    "There seem to be several features in `df` with information about the condition of a property after the earthquake."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a1447c19-b711-4160-8346-f832548c7cfa",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414560\", h=\"ad4bba19ed\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "f8063973-6854-4301-9d96-2cf5ab715d6f",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.2:** Add to your wrangle function so that these features are dropped from the DataFrame. Don't forget to rerun all the cells above. \n",
-    "\n",
-    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)\n",
-    "- [<span id='technique'>Subset a DataFrame's columns based on column names in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "7d0fb999-2922-40b9-a089-2cf9f696f563",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "print(df.info())"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6504254f-f094-4934-8433-cccda372f896",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert (\n",
-    "    df.filter(regex=\"post_eq\").shape[1] == 0\n",
-    "), \"`df` still has leaky features. Try again!\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "4780a879-483f-4c34-bc94-2d7facbbe541",
-   "metadata": {},
-   "source": [
-    "We want to build a **binary classification** model, but our current target `\"damage_grade\"` has more than two categories."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "2dae1b0c-a4f8-4a73-a486-22dae569bf7c",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414603\", h=\"12b3d2f23e\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "8acbb2b6-be6e-4cad-b78e-780de0071c52",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.3:** Add to your wrangle function so that it creates a new target column `\"severe_damage\"`. For buildings where the `\"damage_grade\"` is Grade 4 or above, `\"severe_damage\"` should be `1`. For all other buildings, `\"severe_damage\"` should be `0`. Don't forget to drop `\"damage_grade\"` to avoid leakage, and rerun all the cells above.\n",
-    "\n",
-    "- [<span id='technique'>Access a substring in a Series using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Access-a-substring-in-a-Series)\n",
-    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)\n",
-    "- [<span id='technique'>Recast a column as a different data type in <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Recasting-Data)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "90be38c4-2c57-4bd4-8cba-ab8f1623ed1a",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "print(df[\"severe_damage\"].value_counts())"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "b08cee97-7a8f-4cc0-80d4-a974f327f4db",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert (\n",
-    "    \"damage_grade\" not in df.columns\n",
-    "), \"Your DataFrame should not include the `'damage_grade'` column.\"\n",
-    "assert (\n",
-    "    \"severe_damage\" in df.columns\n",
-    "), \"Your DataFrame is missing the `'severe_damage'` column.\"\n",
-    "assert (\n",
-    "    df[\"severe_damage\"].value_counts().shape[0] == 2\n",
-    "), f\"The `'damage_grade'` column should have only two unique values, not {df['severe_damage'].value_counts().shape[0]}\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "069b72f7-0e18-4bc0-8e3a-57173f20c775",
-   "metadata": {},
-   "source": [
-    "## Explore"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "f5166d21-b3ef-4d6d-9c2e-13de228009ed",
-   "metadata": {},
-   "source": [
-    "Since our model will be a type of linear model, we need to make sure there's no issue with multicollinearity in our dataset."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "5b1ad56c-58ba-4357-ad9d-47d073d9706c",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414636\", h=\"d34256b4e3\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "0529e84c-3043-48e6-bac1-e292fca82eaa",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.4:** Plot a correlation heatmap of the remaining numerical features in `df`. Since `\"severe_damage\"` will be your target, you don't need to include it in your heatmap. \n",
-    "\n",
-    "- [What's a <span id='term'>correlation coefficient</span>?](../%40textbook/05-pandas-summary-statistics.ipynb#Correlations)\n",
-    "- [What's a <span id='term'>heatmap</span>?](../%40textbook/09-visualization-seaborn.ipynb#Correlation-Heatmaps)\n",
-    "- [<span id='technique'>Create a correlation matrix in <span id='tool'>pandas</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Correlation-Matrices)\n",
-    "- [<span id='technique'>Create a heatmap in <span id='tool'>seaborn</span></span>.](../%40textbook/09-visualization-seaborn.ipynb#Correlation-Heatmaps)\n",
-    "\n",
-    "Do you see any features that you need to drop?"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "b91926e6-d776-48b7-86da-74f9751420bc",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Create correlation matrix\n",
-    "correlation = ...\n",
-    "# Plot heatmap of `correlation`\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "64af1c85-670f-4f76-a593-bfd31e8b95b2",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.5:** Change `wrangle` function so that it drops the `\"count_floors_pre_eq\"` column. Don't forget to rerun all the cells above. \n",
-    "\n",
-    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "d5aa34c3-05d0-4c0e-908e-45e74336b652",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert (\n",
-    "    \"count_floors_pre_eq\" not in df.columns\n",
-    "), \"Did you drop the `'count_floors_pre_eq'` column?\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "eabbf0ab-7f0d-4970-9f2e-8e3637667220",
-   "metadata": {},
-   "source": [
-    "Before we build our model, let's see if we can identify any obvious differences between houses that were severely damaged in the earthquake (`\"severe_damage\"==1`) those that were not (`\"severe_damage\"==0`). Let's start with a numerical feature. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "c0cfbb95-533e-4336-a34d-c930dd405636",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414667\", h=\"f39c2c21bc\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "86449de0-fc89-44bd-8871-f0b54a005753",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.6:** Use seaborn to create a boxplot that shows the distributions of the `\"height_ft_pre_eq\"` column for both groups in the `\"severe_damage\"` column. Remember to label your axes. \n",
-    "\n",
-    "- [What's a <span id='term'>boxplot</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Boxplots)\n",
-    "- [<span id='technique'>Create a boxplot using <span id='tool'>Matplotlib</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Boxplots)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "585e56e5-c959-4884-967b-734a1f6b77f0",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Create boxplot\n",
-    "\n",
-    "# Label axes\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "606ed2b2-81a3-4e65-adc5-8d2e49664902",
-   "metadata": {},
-   "source": [
-    "Before we move on to the many categorical features in this dataset, it's a good idea to see the balance between our two classes. What percentage were severely damaged, what percentage were not? "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "49c5d457-bf29-4820-a64d-d459f5d33cc7",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414684\", h=\"81295d5bdb\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "d8a81528-deb5-4f3d-9f63-3e813b9033ab",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.7:** Create a bar chart of the value counts for the `\"severe_damage\"` column. You want to calculate the relative frequencies of the classes, not the raw count, so be sure to set the `normalize` argument to `True`.\n",
-    "\n",
-    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)\n",
-    "- [What's a <span id='technique'>majority class</span>?](../%40textbook/14-ml-classification.ipynb#Majority-and-Minority-Classes)\n",
-    "- [What's a <span id='technique'>minority class</span>?](../%40textbook/14-ml-classification.ipynb#Majority-and-Minority-Classes)\n",
-    "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)\n",
-    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "2e6a67db-8cf3-4070-b23d-01a91dbdceec",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Plot value counts of `\"severe_damage\"`\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "4a3e97d2-526d-4a0e-8515-c0dcb376fa9f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414697\", h=\"ee2d4f28c6\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "110128d4-d927-47a0-a3b0-ee5f2ac66129",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.8:** Create two variables, `majority_class_prop` and `minority_class_prop`, to store the normalized value counts for the two classes in `df[\"severe_damage\"]`. \n",
-    "\n",
-    "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "fffca415-1416-445d-9ba4-4b78a7993606",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "majority_class_prop, minority_class_prop = ...\n",
-    "print(majority_class_prop, minority_class_prop)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "23b3197e-9a0a-48f4-bcaf-e296903ef563",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert (\n",
-    "    majority_class_prop < 1\n",
-    "), \"`majority_class_prop` should be a floating point number between 0 and 1.\"\n",
-    "assert (\n",
-    "    minority_class_prop < 1\n",
-    "), \"`minority_class_prop` should be a floating point number between 0 and 1.\""
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "2346cd49-dd3c-4c02-a4d7-3a94881c633d",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414718\", h=\"6a1e0c1e53\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "a88eec5e-6109-4d80-a749-1a69d7d3ab4f",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.9:** Are buildings with certain foundation types more likely to suffer severe damage? Create a pivot table of `df` where the index is `\"foundation_type\"` and the values come from the `\"severe_damage\"` column, aggregated by the mean.\n",
-    "\n",
-    "- [What's a <span id='term'>pivot table</span>?](../%40textbook/04-pandas-advanced.ipynb#Pivot-Tables)\n",
-    "- [<span id='technique'>Reshape a DataFrame based on column values in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Reshape-a-DataFrame-based-on-column-values)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "151f7bf0-2f9f-4c06-90fd-1865ebf50c54",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Create pivot table\n",
-    "foundation_pivot = ...\n",
-    "foundation_pivot"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0cd7daea-8831-41d8-b529-d421f48dfc67",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414734\", h=\"46de83f96e\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "518ed69b-bf02-46bd-a9c9-97611f8df39f",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.10:** How do the proportions in `foundation_pivot` compare to the proportions for our majority and minority classes? Plot `foundation_pivot` as horizontal bar chart, adding vertical lines at the values for `majority_class_prop` and `minority_class_prop`.\n",
-    "\n",
-    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)\n",
-    "- [<span id='technique'>Add a vertical or horizontal line across a plot using <span id='term'>Matplotlib</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Add-a-vertical-or-horizontal-line-across-a-plot)\n",
-    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "13a57b45-1d64-4acb-886c-5382ffbcc9c2",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Plot bar chart of `foundation_pivot`\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9023dc16-7f70-4d51-8313-525d8eb4c206",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414748\", h=\"8549a0f89c\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "555b8f43-bae6-45a3-a08e-8686ef7da5db",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.11:** Combine the [`select_dtypes`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.select_dtypes.html) and [`nunique`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.nunique.html) methods to see if there are any high- or low-cardinality categorical features in the dataset. \n",
-    "\n",
-    "- [What are <span id='term'>high- and low-cardinality features</span>?](../%40textbook/14-ml-classification.ipynb#High-cardinality-Features)\n",
-    "- [<span id='technique'>Determine the unique values in a column using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Determine-the-unique-values-in-a-column) \n",
-    "- [<span id='technique'>Subset a DataFrame's columns based on the column data types in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Subset-the-Columns-of-a-DataFrame-Based-on-Data-Types)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "c2e39138-98f4-4279-b8bd-b5ab243ab1cc",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check for high- and low-cardinality categorical features\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "c3806583-4ccf-45bb-9f30-02a95e707345",
+   "id": "05b2c58b-e7d0-4883-9a24-082cd3a259a2",
    "metadata": {
     "tags": []
    },
@@ -557,21 +150,21 @@
   },
   {
    "cell_type": "markdown",
-   "id": "01991064-e0a6-4b8b-a22f-c6cc3a820ee7",
+   "id": "0699190f-dffe-4769-acec-04b2bacca236",
    "metadata": {},
    "source": [
-    "**Task 4.2.12:** Create your feature matrix `X` and target vector `y`. Your target is `\"severe_damage\"`. \n",
+    "**Task 4.3.2:** Create your feature matrix `X` and target vector `y`. Your target is `\"severe_damage\"`. \n",
     "\n",
     "- [What's a <span id='term'>feature matrix</span>?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
     "- [What's a <span id='term'>target vector</span>?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
     "- [<span id='technique'>Subset a DataFrame by selecting one or more columns in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns) \n",
-    "- [<span id='technique'>Select a Series from a DataFrame in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Combine-multiple-categories-in-a-Series) "
+    "- [<span id='technique'>Select a Series from a DataFrame in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Select-a-Series-from-a-DataFrame) "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9d7fef15-0678-4c4c-a2f2-84ee12cc50e3",
+   "id": "0e7cbd46-5294-4687-b08d-76e0ff1c098b",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -583,52 +176,117 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "98d65285-4832-4502-818b-40074ea02fbc",
+   "id": "de8d0db2-147a-4c63-adcc-c3d9cac61b26",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665414769\", h=\"1bfddf07b2\", width=600)"
+    "# Check your work\n",
+    "assert X.shape == (70836, 11), f\"The shape of `X` should be (70836, 11), not {X.shape}.\"\n",
+    "assert y.shape == (70836,), f\"The shape of `y` should be (70836,), not {y.shape}.\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "89ee2ecd-2314-4d7e-b68b-2b7ade5e8acb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665415006\", h=\"ecb1b87861\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "2f90dce4-5880-4fff-acfa-9099e2c8141a",
+   "id": "ad54e1dc-2066-4e73-bd68-150c9b5bceb6",
    "metadata": {},
    "source": [
-    "**Task 4.2.13:** Divide your data (`X` and `y`) into training and test sets using a randomized train-test split. Your test set should be 20% of your total data. And don't forget to set a `random_state` for reproducibility. \n",
+    "**Task 4.3.3:** Divide your data (`X` and `y`) into training and test sets using a randomized train-test split. Your test set should be 20% of your total data. And don't forget to set a `random_state` for reproducibility. \n",
     "\n",
+    "- [<span id='technique'>Perform a randomized train-test split using <span id='tool'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Randomized-Train-Test-split)<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "06284a21-96bb-490b-a14d-98a8a45c6b24",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X_train, X_test, y_train, y_test = ..."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4adfdfa1-6f51-49b4-9f53-49641d7632ec",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert X_train.shape == (\n",
+    "    56668,\n",
+    "    11,\n",
+    "), f\"The shape of `X_train` should be (56668, 11), not {X_train.shape}.\"\n",
+    "assert y_train.shape == (\n",
+    "    56668,\n",
+    "), f\"The shape of `y_train` should be (56668,), not {y_train.shape}.\"\n",
+    "assert X_test.shape == (\n",
+    "    14168,\n",
+    "    11,\n",
+    "), f\"The shape of `X_test` should be (14168, 11), not {X_test.shape}.\"\n",
+    "assert y_test.shape == (\n",
+    "    14168,\n",
+    "), f\"The shape of `y_test` should be (14168,), not {y_test.shape}.\""
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5ba9c78e-a189-4c9c-89e3-0475c7b86c83",
+   "metadata": {},
+   "source": [
+    "**Task 4.3.4:** Divide your training data (`X_train` and `y_train`) into training and validation sets using a randomized train-test split. Your validation data should be 20% of the remaining data. Don't forget to set a `random_state`.\n",
+    "\n",
+    "- [What's a <span id='term'>validation set</span>?](../%40textbook/14-ml-classification.ipynb#Randomized-Train-Test-split)\n",
     "- [<span id='technique'>Perform a randomized train-test split using <span id='tool'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Randomized-Train-Test-split)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "471fa464-bb90-4a52-af2f-73266e53a300",
+   "id": "9c2fe35c-838d-4175-8b47-25808a40a223",
    "metadata": {},
    "outputs": [],
    "source": [
-    "X_train, X_test, y_train, y_test = ...\n",
-    "\n",
-    "print(\"X_train shape:\", X_train.shape)\n",
-    "print(\"y_train shape:\", y_train.shape)\n",
-    "print(\"X_test shape:\", X_test.shape)\n",
-    "print(\"y_test shape:\", y_test.shape)"
+    "X_train, X_val, y_train, y_val = ..."
    ]
   },
   {
-   "cell_type": "markdown",
-   "id": "ac0145e4-d0bb-4ba6-8b63-27da32fe4910",
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6ceaa139-04e0-4fc8-b4f6-4512d69dd5fe",
    "metadata": {},
+   "outputs": [],
    "source": [
-    "<div class=\"alert alert-block alert-info\">\n",
-    "    <p><b>Frequent Question:</b> Why do we set the random state to <code>42</code>?</p>\n",
-    "    <p><b>Answer:</b> The truth is you can pick any integer when setting a random state. The number you choose doesn't affect the results of your project; it just makes sure that your work is reproducible so that others can verify it. However, lots of people choose <code>42</code> because it appears in a well-known work of science fiction called <a href='https://en.wikipedia.org/wiki/42_(number)#The_Hitchhiker's_Guide_to_the_Galaxy'>The Hitchhiker's Guide to the Galaxy</a>. In short, it's an inside joke. 😉</p>\n",
-    "</div>"
+    "# Check your work\n",
+    "assert X_train.shape == (\n",
+    "    45334,\n",
+    "    11,\n",
+    "), f\"The shape of `X_train` should be (45334, 11), not {X_train.shape}.\"\n",
+    "assert y_train.shape == (\n",
+    "    45334,\n",
+    "), f\"The shape of `y_train` should be (45334,), not {y_train.shape}.\"\n",
+    "assert X_val.shape == (\n",
+    "    11334,\n",
+    "    11,\n",
+    "), f\"The shape of `X_val` should be (11334, 11), not {X_val.shape}.\"\n",
+    "assert y_val.shape == (\n",
+    "    11334,\n",
+    "), f\"The shape of `y_val` should be (11334,), not {y_val.shape}.\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "b50c5f58-1635-4b63-bfc0-102d63139859",
+   "id": "cf2a6fc1-690b-42b9-b60b-c63f91aabce9",
    "metadata": {
     "tags": []
    },
@@ -638,37 +296,27 @@
   },
   {
    "cell_type": "markdown",
-   "id": "fafdd5ca-bde6-4cf0-a8ce-94286b4494cb",
+   "id": "c70843c4-fbc3-4225-b093-9cf4b92e8c91",
    "metadata": {},
    "source": [
     "## Baseline"
    ]
   },
   {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "90073acd-0f79-4338-a358-4b7ac661b33c",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414807\", h=\"c997c58720\", width=600)"
-   ]
-  },
-  {
    "cell_type": "markdown",
-   "id": "ea9a15aa-2f2f-40de-a606-602eb9281fde",
+   "id": "0b51d01d-83a4-49a0-9583-19449d088ad6",
    "metadata": {},
    "source": [
-    "**Task 4.2.14:** Calculate the baseline accuracy score for your model.\n",
+    "**Task 4.3.5:** Calculate the baseline accuracy score for your model.\n",
     "\n",
     "- [What's <span id='tool'>accuracy score</span>?](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)\n",
-    "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
+    "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a65edada-56fe-454a-a38d-bbbb0ddb2f86",
+   "id": "e12355df-f1b9-4fe2-b304-51c8db8fcaad",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -678,8 +326,10 @@
   },
   {
    "cell_type": "markdown",
-   "id": "b4098e3e-72dd-4426-847b-7bdc33bcf15b",
-   "metadata": {},
+   "id": "b6e3aa6e-03ea-4b05-9997-7886b2fef482",
+   "metadata": {
+    "tags": []
+   },
    "source": [
     "## Iterate"
    ]
@@ -687,38 +337,44 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c61da634-dff0-4f0c-b815-c415effb0e05",
+   "id": "890ae56d-c99d-4e22-b92c-8661b7ced1c1",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665414835\", h=\"1d8673223e\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "f89c7494-dac1-4cdf-bf32-87eed972b0ed",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.15:** Create a pipeline named `model` that contains a `OneHotEncoder` transformer and a `LogisticRegression` predictor. Be sure you set the `use_cat_names` argument for your transformer to `True`. Then fit it to the training data. \n",
-    "\n",
-    "- [What's <span id='term'>logistic regression</span>?](../%40textbook/14-ml-classification.ipynb#Logistic-Regression)\n",
-    "- [What's <span id='term'>one-hot encoding</span>?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)\n",
-    "- [<span id='technique'>Create a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Creating-a-Pipeline-in-scikit-learn)\n",
-    "- [<span id='technique'>Fit a model to training data in <span id='tool'>scikit-learn</span></span>.](../%40textbook/15-ml-regression.ipynb#Fitting-a-Model-to-Training-Data)\n",
-    "\n",
-    "<div class=\"alert alert-block alert-info\">\n",
-    "<b>Tip:</b> If you get a <code>ConvergenceWarning</code></b> when you fit your model to the training data, don't worry. This can sometimes happen with logistic regression models. Try setting the <code>max_iter</code> argument in your predictor to <code>1000</code>.\n",
-    "</div>"
+    "VimeoVideo(\"665415061\", h=\"6250826047\", width=600)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "62a7ee88-52a2-4461-9b07-705a9abe6f18",
+   "id": "f5be024c-55cb-4dfb-8469-f80529fab56f",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Build model\n",
+    "VimeoVideo(\"665415109\", h=\"b3bb82651d\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "066ff773-54ec-4314-aaeb-fcfff62ba600",
+   "metadata": {},
+   "source": [
+    "**Task 4.3.6:** Create a pipeline named `model` that contains a `OrdinalEncoder` transformer and a `DecisionTreeClassifier` predictor. (Be sure to set a `random_state` for your predictor.) Then fit your model to the training data. \n",
+    "\n",
+    "- [What's a <span id='term'>decision tree</span>?](../%40textbook/14-ml-classification.ipynb#Decision-Trees)\n",
+    "- [What's <span id='term'>ordinal encoding</span>?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Ordinal-Encoding)\n",
+    "- [<span id='technique'>Create a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Creating-a-Pipeline-in-scikit-learn)\n",
+    "- [<span id='technique'>Fit a model to training data in <span id='tool'>scikit-learn</span></span>.](../%40textbook/15-ml-regression.ipynb#Fitting-a-Model-to-Training-Data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "57fdb70f-4ee0-44fb-bc9d-d4326ae22e84",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Build Model\n",
     "model = ...\n",
     "# Fit model to training data\n"
    ]
@@ -726,7 +382,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b2c6ae76-43f4-4c3b-936a-f0c794c03108",
+   "id": "7b62786e-6d4e-42af-9701-3ad42679220d",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -735,38 +391,30 @@
     "    model, Pipeline\n",
     "), f\"`model` should be a Pipeline, not type {type(model)}.\"\n",
     "assert isinstance(\n",
-    "    model[0], OneHotEncoder\n",
-    "), f\"The first step in your Pipeline should be a OneHotEncoder, not type {type(model[0])}.\"\n",
+    "    model[0], OrdinalEncoder\n",
+    "), f\"The first step in your Pipeline should be an OrdinalEncoder, not type {type(model[0])}.\"\n",
     "assert isinstance(\n",
-    "    model[-1], LogisticRegression\n",
-    "), f\"The last step in your Pipeline should be LogisticRegression, not type {type(model[-1])}.\"\n",
+    "    model[-1], DecisionTreeClassifier\n",
+    "), f\"The last step in your Pipeline should be an DecisionTreeClassifier, not type {type(model[-1])}.\"\n",
     "check_is_fitted(model)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "19634c38-c36f-48b3-9d82-8a89e33b6eb4",
-   "metadata": {},
-   "source": [
-    "## Evaluate"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0b17ddd7-0b35-4eea-af1f-5a15bff3a8af",
+   "id": "29301d5b-b0bf-4514-a46c-34b70998d340",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665414885\", h=\"f35ff0e23e\", width=600)"
+    "VimeoVideo(\"665415153\", h=\"f0ec320955\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "22932c04-a053-499c-bd08-66de0d532d0f",
+   "id": "0a9b5321-af28-4f8b-86c0-d833f93c6ed8",
    "metadata": {},
    "source": [
-    "**Task 4.2.16:** Calculate the training and test accuracy scores for your models. \n",
+    "**Task 4.3.7:** Calculate the training and validation accuracy scores for your models. \n",
     "\n",
     "- [<span id='technique'>Calculate the accuracy score for a model in <span id='term'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)\n",
     "- [<span id='technique'>Generate predictions using a trained model in <span id='term'>scikit-learn</span></span>.](../%40textbook/15-ml-regression.ipynb#Generating-Predictions-Using-a-Trained-Model)"
@@ -775,20 +423,239 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "81c25ba4-de2d-44cc-89fe-7240cc3a0c4a",
+   "id": "05ed07f3-afa2-4077-afa6-4d69cc678113",
    "metadata": {},
    "outputs": [],
    "source": [
     "acc_train = ...\n",
-    "acc_test = ...\n",
+    "acc_val = ...\n",
     "\n",
     "print(\"Training Accuracy:\", round(acc_train, 2))\n",
-    "print(\"Test Accuracy:\", round(acc_test, 2))"
+    "print(\"Validation Accuracy:\", round(acc_val, 2))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "27100046-4dbe-4c1a-bb2d-9ad92512e688",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665415169\", h=\"44702fc696\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "88aefbd7-2d94-4f4e-bfc6-b0ac4ef3fed9",
+   "id": "830f879d-52bb-4f7e-ba6c-a272340e0031",
+   "metadata": {},
+   "source": [
+    "**Task 4.3.8:** Use the [`get_depth`](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier.get_depth) method on the `DecisionTreeClassifier` in your model to see how deep your tree grew during training. \n",
+    "\n",
+    "- [<span id='technique'>Access an object in a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b71dd37f-0997-4f6b-b97c-f3f8ff27fc9e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "tree_depth = ...\n",
+    "print(\"Tree Depth:\", tree_depth)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "24011e53-75ce-40e2-93f7-315333e473dd",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665415186\", h=\"c4ce187170\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8276ab78-eebf-4127-855b-011728908036",
+   "metadata": {},
+   "source": [
+    "**Task 4.3.9:** Create a range of possible values for `max_depth` hyperparameter of your model's `DecisionTreeClassifier`. `depth_hyperparams` should range from `1` to `50` by steps of `2`.\n",
+    "\n",
+    "- [What's an <span id='term'>iterator</span>?](../%40textbook/02-python-advanced.ipynb#Iterators-and-Iterables-)\n",
+    "- [<span id='technique'>Create a range in <span id='tool'>Python</span></span>.](../%40textbook/18-ts-models.ipynb#Hyperparameters)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "32481a79-206a-4842-a9f0-067cd1777f89",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "depth_hyperparams = ...\n",
+    "depth_hyperparams"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "481670d3-fdb7-4f4e-8240-ab077642146e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert (\n",
+    "    len(list(depth_hyperparams)) == 25\n",
+    "), f\"`depth_hyperparams` should contain 25 items, not {len(list(depth_hyperparams))}.\"\n",
+    "assert (\n",
+    "    list(depth_hyperparams)[0] == 1\n",
+    "), f\"`depth_hyperparams` should begin at 1, not {list(depth_hyperparams)[0]}.\"\n",
+    "assert (\n",
+    "    list(depth_hyperparams)[-1] == 49\n",
+    "), f\"`depth_hyperparams` should end at 49, not {list(depth_hyperparams)[-1]}.\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "22a4ad6d-31d5-4f8a-bd9f-1ab5c0d40252",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665415198\", h=\"b4b85c3308\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f0d09f37-0f63-48cf-8be3-6024d5204af2",
+   "metadata": {},
+   "source": [
+    "**Task 4.3.10:** Complete the code below so that it trains a model for every `max_depth` in `depth_hyperparams`. Every time a new model is trained, the code should also calculate the training and validation accuracy scores and append them to the `training_acc` and `validation_acc` lists, respectively. \n",
+    "\n",
+    "- [<span id='technique'>Append an item to a list in <span id='tool'>Python</span></span>.](../%40textbook/01-python-getting-started.ipynb#Appending-Items)\n",
+    "- [<span id='technique'>Create a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Creating-a-Pipeline-in-scikit-learn)\n",
+    "- [<span id='technique'>Fit a model to training data in <span id='tool'>scikit-learn</span></span>.](../%40textbook/15-ml-regression.ipynb#Fitting-a-Model-to-Training-Data)\n",
+    "- [<span id='technique'>Write a for loop in <span id='tool'>Python</span></span>.](../%40textbook/01-python-getting-started.ipynb#Python-for-Loops)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "52fe4ed5-8f23-4639-994f-510161cfcfbf",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create empty lists for training and validation accuracy scores\n",
+    "training_acc = []\n",
+    "validation_acc = []\n",
+    "\n",
+    "for d in depth_hyperparams:\n",
+    "    # Create model with `max_depth` of `d`\n",
+    "    test_model = ...\n",
+    "    # Fit model to training data\n",
+    "    test_model.fit(X_train, y_train)\n",
+    "    # Calculate training accuracy score and append to `training_acc`\n",
+    "    \n",
+    "    training_acc.append(...)\n",
+    "    # Calculate validation accuracy score and append to `training_acc`\n",
+    "    \n",
+    "    validation_acc.append(...)\n",
+    "\n",
+    "print(\"Training Accuracy Scores:\", training_acc[:3])\n",
+    "print(\"Validation Accuracy Scores:\", validation_acc[:3])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "595645c5-bbf8-4b72-a100-85009e88084a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Check your work\n",
+    "assert (\n",
+    "    len(training_acc) == 25\n",
+    "), f\"`training_acc` should contain 25 items, not {len(training_acc)}.\"\n",
+    "assert (\n",
+    "    len(validation_acc) == 25\n",
+    "), f\"`validation_acc` should contain 25 items, not {len(validation_acc)}.\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d3178eb0-8bcf-4e07-9c37-d3b942bd9915",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665415236\", h=\"51d4be13fa\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e1f295a9-2c10-4d8f-8548-bfc7b20d641b",
+   "metadata": {},
+   "source": [
+    "**Task 4.3.11:** Create a visualization with two lines. The first line should plot the `training_acc` values as a function of `depth_hyperparams`, and the second should plot `validation_acc` as a function of `depth_hyperparams`. You x-axis should be labeled `\"Max Depth\"`, and the y-axis `\"Accuracy Score\"`. Also include a legend so that your audience can distinguish between the two lines. \n",
+    "\n",
+    "- [What's a <span id='term'>line plot</span>?](../%40textbook/07-visualization-pandas.ipynb#Line-Plots)\n",
+    "- [<span id='technique'>Create a line plot in <span id='tool'>Matplotlib</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Line-Plots)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7d22ab87-ad2f-4390-abad-565090dd8b76",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot `depth_hyperparams`, `training_acc`\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "809c2c3c",
+   "metadata": {},
+   "source": [
+    "## Evaluate"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6d50688b-0b49-416b-a128-92317cbdebcc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665415255\", h=\"573e9cfd74\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "41ab6e8a-9e99-488f-ad93-11acf8e802a8",
+   "metadata": {},
+   "source": [
+    "**Task 4.3.12:** Based on your visualization, choose the `max_depth` value that leads to the best validation accuracy score. Then retrain your original model with that `max_depth` value. Lastly, check how your tuned model performs on your test set by calculating the test accuracy score below. Were you able to resolve the overfitting problem with this new `max_depth`?\n",
+    "\n",
+    "- [<span id='technique'>Calculate the accuracy score for a model in <span id='term'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)\n",
+    "- [<span id='technique'>Generate predictions using a trained model in <span id='term'>scikit-learn</span></span>.](../%40textbook/15-ml-regression.ipynb#Generating-Predictions-Using-a-Trained-Model)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c6a0ef8c-e195-42db-816f-d2864fd682de",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "test_acc = ...\n",
+    "print(\"Test Accuracy:\", round(test_acc, 2))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "aae12723",
    "metadata": {},
    "source": [
     "# Communicate"
@@ -797,40 +664,61 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "5d17c2ce-fc0d-42b8-aeb9-28aba9e4f8b8",
+   "id": "919fce9d-2e3d-41ad-9d72-408c5eaf47a0",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665414902\", h=\"f9bdbe9e75\", width=600)"
+    "VimeoVideo(\"665415275\", h=\"880366a826\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "54a110d0-ee26-4338-a3da-2a3138d5f9c4",
+   "id": "6d9a6162-66af-4fa0-8018-ded8a49718be",
    "metadata": {},
    "source": [
-    "**Task 4.2.17:** Instead of using the `predict` method with your model, try `predict_proba` with your training data. How does the `predict_proba` output differ than that of `predict`? What does it represent?\n",
+    "**Task 4.3.13:** Complete the code below to use the [`plot_tree`](https://scikit-learn.org/stable/modules/generated/sklearn.tree.plot_tree.html) function from scikit-learn to visualize the decision logic of your model. \n",
     "\n",
-    "- [<span id='technique'>Generate probability estimates using a trained model in <span id='tool'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Probability-Estimates)"
+    "- [<span id='technique'>Plot a decision tree using <span id='tool'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Plotting-a-Decision-Tree)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3b91ad42-a1d9-49d5-be9f-d442991c7c2e",
+   "id": "58181a18-b16d-4ff2-8580-ae8d9256cb22",
    "metadata": {},
    "outputs": [],
    "source": [
-    "y_train_pred_proba = ...\n",
-    "print(y_train_pred_proba[:5])"
+    "# Create larger figure\n",
+    "fig, ax = plt.subplots(figsize=(25, 12))\n",
+    "# Plot tree\n",
+    "plot_tree(\n",
+    "    decision_tree = ...\n",
+    "    feature_names = ...\n",
+    "    filled=True,  # Color leaf with class\n",
+    "    rounded=True,  # Round leaf edges\n",
+    "    proportion=True,  # Display proportion of classes in leaf\n",
+    "    max_depth=3,  # Only display first 3 levels\n",
+    "    fontsize=12,  # Enlarge font\n",
+    "    ax=ax,  # Place in figure axis\n",
+    ");"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b6f57604-3698-407a-8de2-db979de05e72",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665415304\", h=\"c7eeac08c9\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "044787eb-ef3a-498d-9548-2c8ffdcacbb2",
+   "id": "d39b7687-6a8b-42bf-83b8-693ec58ec685",
    "metadata": {},
    "source": [
-    "**Task 4.2.18:** Extract the feature names and importances from your `model`.\n",
+    "**Task 4.3.14:** Assign the feature names and importances of your model to the variables below. For the `features`, you can get them from the column names in your training set. For the `importances`, you access the [`feature_importances_`](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier.feature_importances_) attribute of your model's `DecisionTreeClassifier`. \n",
     "\n",
     "- [<span id='technique'>Access an object in a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)"
    ]
@@ -838,110 +726,102 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "13ca314b-5fa3-44d8-bc62-15dc165859a5",
+   "id": "6aa9075d-3cb3-4a57-87e3-ea7d19be3dff",
    "metadata": {},
    "outputs": [],
    "source": [
     "features = ...\n",
-    "importances = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0d4cb96d-6f1a-45b2-91b9-b11a2ed36d42",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414916\", h=\"c0540604cd\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "2aedeb5d-617e-4da1-8828-664467856cfc",
-   "metadata": {},
-   "source": [
-    "**Task 4.2.19:** Create a pandas Series named `odds_ratios`, where the index is `features` and the values are your the exponential of the `importances`. How does `odds_ratios` for this model look different from the other linear models we made in projects 2 and 3?\n",
+    "importances = ...\n",
     "\n",
-    "- [<span id='technique'>Create a Series in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns)"
+    "print(\"Features:\", features[:3])\n",
+    "print(\"Importances:\", importances[:3])"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "7d4d29e3-ce90-4df2-822b-4f83e3ecfcd7",
+   "id": "a43a03a4-d19f-41f2-9601-2d7f496c922c",
    "metadata": {},
    "outputs": [],
    "source": [
-    "odds_ratios = ...\n",
-    "odds_ratios.head()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "24d7fbd9-226e-4d9a-8910-7271b2d51c79",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414943\", h=\"56eb74d93e\", width=600)"
+    "# Check your work\n",
+    "assert len(features) == 11, f\"`features` should contain 11 items, not {len(features)}.\"\n",
+    "assert (\n",
+    "    len(importances) == 11\n",
+    "), f\"`importances` should contain 11 items, not {len(importances)}.\""
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "165549de-8b20-4360-9f3f-fff29f525efc",
+   "id": "c36a7198-2354-4ec2-a35a-921a7316e43d",
    "metadata": {},
    "source": [
-    "**Task 4.2.20:** Create a horizontal bar chart with the five largest coefficients from `odds_ratios`. Be sure to label your x-axis `\"Odds Ratio\"`.\n",
+    "**Task 4.3.15:** Create a pandas Series named `feat_imp`, where the index is `features` and the values are your `importances`. The Series should be sorted from smallest to largest importance.\n",
     "\n",
-    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)\n",
-    "- [<span id='technique'>Create a bar chart using <span id='tool'>Matplotlib</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)"
+    "- [<span id='technique'>Create a Series in <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Adding-Columns)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "24d9f874-ddf8-402d-abb3-d537fe7d81a7",
+   "id": "3c9aef0f-fe01-4426-8e76-fd657b316f0f",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Horizontal bar chart, five largest coefficients\n"
+    "feat_imp = ...\n",
+    "feat_imp.head()"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ae6ff145-74e6-40ac-93a1-575644719606",
+   "id": "5dd75215-a5d4-4da1-91ad-84ca6a3f4e36",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665414964\", h=\"a61b881450\", width=600)"
+    "# Check your work\n",
+    "assert isinstance(\n",
+    "    feat_imp, pd.Series\n",
+    "), f\"`feat_imp` should be a Series, not {type(feat_imp)}.\"\n",
+    "assert feat_imp.shape == (\n",
+    "    11,\n",
+    "), f\"`feat_imp` should have shape (11,), not {feat_imp.shape}.\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b981cd13-b283-46fb-831b-2ac1822c2211",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"665415316\", h=\"0dd9004477\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "53ab1506-5334-48d2-8863-53e9dee87777",
+   "id": "5a246622-3962-4309-bcb5-85f13adde3f1",
    "metadata": {},
    "source": [
-    "**Task 4.2.21:** Create a horizontal bar chart with the five smallest coefficients from `odds_ratios`. Be sure to label your x-axis `\"Odds Ratio\"`.\n",
+    "**Task 4.3.16:** Create a horizontal bar chart with all the features in `feat_imp`. Be sure to label your x-axis `\"Gini Importance\"`.\n",
     "\n",
-    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)\n",
-    "- [<span id='technique'>Create a bar chart using <span id='tool'>Matplotlib</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)"
+    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)\n",
+    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "da47fcfc-aed1-41c7-8a9b-7b758b7185e6",
+   "id": "5710f51b-84bb-479e-8852-4e9abe828bd0",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Horizontal bar chart, five smallest coefficients\n"
+    "# Create horizontal bar chart\n"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "52bc3d24",
+   "id": "cf71a80e",
    "metadata": {
     "deletable": false,
     "editable": false
