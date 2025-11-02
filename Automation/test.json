@@ -2,49 +2,50 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "56a5f6d3-0bc8-4d17-a88e-3f435a485759",
+   "id": "e1a2d55e-855c-43bf-90d6-d7c4ea39c311",
    "metadata": {},
    "source": [
-    "<font size=\"+3\"><strong>4.4. Beyond the Model: Data Ethics</strong></font>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "c0b5c020-d93a-4613-811b-44376e3497ee",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "import sqlite3\n",
-    "import warnings\n",
-    "\n",
-    "import matplotlib.pyplot as plt\n",
-    "import numpy as np\n",
-    "import pandas as pd\n",
-    "from category_encoders import OneHotEncoder\n",
-    "from IPython.display import VimeoVideo\n",
-    "from sklearn.linear_model import LogisticRegression\n",
-    "from sklearn.metrics import accuracy_score\n",
-    "from sklearn.model_selection import train_test_split\n",
-    "from sklearn.pipeline import Pipeline, make_pipeline\n",
-    "from sklearn.utils.validation import check_is_fitted\n",
-    "\n",
-    "warnings.simplefilter(action=\"ignore\", category=FutureWarning)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "507fbbaa-3f2c-41df-aa68-22a629f3e76a",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665414155\", h=\"c8a3e81a05\", width=600)"
+    "<font size=\"+3\"><strong>5.1. Working with JSON files</strong></font>"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "0d61ec2c-51ee-4c37-8469-d56909073ad1",
+   "id": "94810d73-7954-4d31-ba93-524c3ae779c8",
+   "metadata": {},
+   "source": [
+    "In this project, we'll be looking at tracking corporate bankruptcies in Poland. To do that, we'll need to get data that's been stored in a `JSON` file, explore it, and turn it into a DataFrame that we'll use to train our model."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0ce7e7e1-14e1-4e67-9b2c-cac8939af21a",
+   "metadata": {
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import gzip\n",
+    "import json\n",
+    "import pickle \n",
+    "\n",
+    "import pandas as pd\n",
+    "from IPython.display import VimeoVideo"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "468a9ae7-1cc1-41f8-a7f6-813ce1938c4f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694158732\", h=\"73c2fb4e4f\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d51973f2-1da4-477c-9770-97ed5174dada",
    "metadata": {},
    "source": [
     "# Prepare Data"
@@ -52,223 +53,194 @@
   },
   {
    "cell_type": "markdown",
-   "id": "565c7aba-4476-44c7-8dba-32b3c0b8aac3",
+   "id": "d040de7c-daf6-4817-8c55-18b8f29a785d",
    "metadata": {},
    "source": [
-    "**Task 4.4.1:** Run the cell below to connect to the `nepal.sqlite` database.\n",
-    "\n",
-    "- [What's <span id='term'>ipython-sql</span>?](../%40textbook/10-databases-sql.ipynb#ipython-sql)\n",
-    "- [What's a <span id='term'>Magics function</span>?](../%40textbook/10-databases-sql.ipynb#Magic-Commands)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "c3a87c41-bc00-4874-91ed-c00f5cf3c057",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%load_ext sql\n",
-    "%sql sqlite:///../nepal.sqlite"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "382e46aa-8bd6-4c8d-88cd-84df22c9c0c2",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415362\", h=\"f677c48c46\", width=600)"
+    "## Open"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "4aa77c39-044c-4723-a02d-3cc04eba5486",
+   "id": "46981355-9c3d-44ce-81bb-257fb30fb1f4",
    "metadata": {},
    "source": [
-    "**Task 4.4.2:** Select all columns from the `household_demographics` table, limiting your results to the first five rows.\n",
-    "\n",
-    "- [<span id='technique'>Write a basic query in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
-    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
+    "The first thing we need to do is access the file that contains the data we need. We've done this using multiple strategies before, but this time around, we're going to use the command line."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "e7223320-75c3-4528-a3fa-8a0bd5205c8b",
+   "id": "13a55cca-df6f-486e-a6ee-8823369cbf1b",
    "metadata": {},
    "outputs": [],
    "source": [
-    "%%sql\n",
-    "\n"
+    "VimeoVideo(\"693794546\", h=\"6e1fab0a5e\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "73db4135-7ab4-4e56-aea8-e456c3acd58f",
+   "id": "44adf074-0355-43e1-9f57-42dc3e8c7ae6",
    "metadata": {},
    "source": [
-    "**Task 4.4.3:** How many observations are in the `household_demographics` table? Use the `count` command to find out.\n",
+    "**Task 5.1.1:** Open a terminal window and navigate to the directory where the data for this project is located.\n",
     "\n",
-    "- [<span id='technique'>Calculate the number of rows in a table using a `count` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) <span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "facd37c6-85fe-42e4-b4e8-60f9e0004ceb",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "2aa32452-4475-47a9-b14a-1a13f4284885",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415378\", h=\"aa2b99493e\", width=600)"
+    "- [What's the  Linux command line?](../%40textbook/19-linux-command-line.ipynb)\n",
+    "- [Navigate a file system using the Linux command line.](../%40textbook/19-linux-command-line.ipynb) "
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "4e8b1eb4-fe29-4d2b-9afd-a3ebdc64388d",
+   "id": "998596d3-576e-480c-a148-8532e10308a9",
    "metadata": {},
    "source": [
-    "**Task 4.4.4:** Select all columns from the `id_map` table, limiting your results to the first five rows.\n",
+    "As we've seen in our other projects, datasets can be large or small, messy or clean, and complex or easy to understand. Regardless of how the data looks, though, it needs to be saved in a file somewhere, and when that file gets too big, we need to *compress* it. Compressed files are easier to store because they take up less space. If you've ever come across a `ZIP` file, you've worked with compressed data. \n",
     "\n",
-    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
-    "\n",
-    "What columns does it have in common with `household_demographics` that we can use to join them?"
+    "The file we're using for this project is compressed, so we'll need to use a file utility called `gzip` to open it up."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c16bbbe6-1a70-4425-9b82-8df4da71fdd2",
+   "id": "96077600-8d0d-421c-88a4-00c4d871feca",
    "metadata": {},
    "outputs": [],
    "source": [
-    "%%sql\n",
-    "\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "7e99be7c-6b71-4df7-9701-5759eb1c938c",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415406\", h=\"46a990c8f7\", width=600)"
+    "VimeoVideo(\"693794604\", h=\"a8c0f15712\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "25c156e1-5245-42df-bb9f-144e09270caf",
+   "id": "0c3ed9a1-67ec-4004-adc3-bd36452bc924",
    "metadata": {},
    "source": [
-    "**Task 4.4.5:** Create a table with all the columns from `household_demographics`, all the columns from `building_structure`, the **`vdcmun_id`** column from `id_map`, and the **`damage_grade`** column from `building_damage`. Your results should show only rows where the **`district_id`** is `4` and limit your results to the first five rows.\n",
+    "**Task 5.1.2:** In the terminal window, locate the data file for this project and decompress it.\n",
     "\n",
-    "- [<span id='technique'>Create an alias for a column or table using the `AS` command in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#SELECT-and-FROM) \n",
-    "- [<span id='technique'>Determine the unique values in a column using a `DISTINCT` function in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Aggregating-Data) \n",
-    "- [<span id='technique'>Merge two tables using a `JOIN` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Joining-Tables)\n",
-    "- [<span id='technique'>Inspect a table using a `LIMIT` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)\n",
-    "- [<span id='technique'>Subset a table using a `WHERE` clause in <span id='tool'>SQL</span></span>.](../%40textbook/10-databases-sql.ipynb#Building-Blocks-of-the-Basic-Query)"
+    "- [What's gzip?](../%40textbook/19-linux-command-line.ipynb#gzip)\n",
+    "- [What's data compression?](../%40textbook/19-linux-command-line.ipynb#Data-Compressing)\n",
+    "- [Decompress a file using gzip.](../%40textbook/19-linux-command-line.ipynb#gzip)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "8f18848d-a800-46c2-a1ab-c6aa1ca56f64",
+   "id": "1504adbf-fa93-42a9-a98d-18b265020f5f",
    "metadata": {},
    "outputs": [],
    "source": [
-    "%%sql\n",
-    "\n"
+    "VimeoVideo(\"693794641\", h=\"d77bf46d41\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "a851c41b-472d-4827-ae2e-52a1a713937f",
+   "id": "7119c915-6023-45ff-969d-9178bdf9c55a",
    "metadata": {},
    "source": [
-    "## Import"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "3619e4a7-af37-470a-a0ca-838a9315e831",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "def wrangle(db_path):\n",
-    "    # Connect to database\n",
-    "    conn = sqlite3.connect(db_path)\n",
-    "\n",
-    "    # Construct query\n",
-    "   \n",
-    "    query = ...\n",
-    "    \n",
-    "    # Read query results into DataFrame\n",
-    "    df = ...\n",
-    "\n",
-    "    # Identify leaky columns\n",
-    "    drop_cols = [col for col in df.columns if \"post_eq\" in col]\n",
-    "\n",
-    "    # Add high-cardinality / redundant column\n",
-    "    drop_cols.append(\"building_id\")\n",
-    "\n",
-    "    # Create binary target column\n",
-    "    df[\"damage_grade\"] = df[\"damage_grade\"].str[-1].astype(int)\n",
-    "    df[\"severe_damage\"] = (df[\"damage_grade\"] > 3).astype(int)\n",
-    "\n",
-    "    # Drop old target\n",
-    "    drop_cols.append(\"damage_grade\")\n",
-    "\n",
-    "    # Drop multicollinearity column\n",
-    "    drop_cols.append(\"count_floors_pre_eq\")\n",
-    "  \n",
-    "    # Group caste column\n",
-    "    \n",
-    "    # Drop columns\n",
-    "    df.drop(columns=drop_cols, inplace=True)\n",
-    "\n",
-    "    return df"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "1de3554a-46e7-4858-9cb6-16d46c6e6cde",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415443\", h=\"ca27a7ebfc\", width=600)"
+    "## Explore"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "a5cb7fba-d0a8-4f49-a239-3dcd11322b62",
+   "id": "80b5e424-15f3-4984-afa9-0b0b38a6a5eb",
    "metadata": {},
    "source": [
-    "**Task 4.4.6:** Add the query you created in the previous task to the `wrangle` function above. Then import your data by running the cell below. The path to the database is `\"../nepal.sqlite\"`.\n",
-    "\n",
-    "- [<span id='technique'>Read SQL query into a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/10-databases-sql.ipynb#Using-pandas-with-SQL-Databases)\n",
-    "- [<span id='technique'>Write a function in <span id='tool'>Python</span></span>.](../%40textbook/02-python-advanced.ipynb#Functions)"
+    "Now that we've decompressed the data, let's take a look and see what's there."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "2f6345ab-3f26-4801-aeda-53354e9485a1",
+   "id": "f438b1c2-8b82-498d-bad6-731de5db4f79",
    "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"693794658\", h=\"c8f1bba831\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2b6c0ac5-1bb2-4f00-8555-76b3c907a9ff",
+   "metadata": {},
+   "source": [
+    "**Task 5.1.3:** In the terminal window, examine the first 10 lines of `poland-bankruptcy-data-2009.json`.\n",
+    "\n",
+    "- [Print lines from a file in the Linux command line.](../%40textbook/19-linux-command-line.ipynb#Viewing-File-Contents)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "79f64022-60f3-4643-a4f9-780254df8a72",
+   "metadata": {},
+   "source": [
+    "Does this look like any of the data structures we've seen in previous projects?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "47f04563-b4d4-4262-829e-d7929a6e3a94",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"693794680\", h=\"7f1302444b\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1afa9bc9-bcfe-4814-ad2f-b35866feacf6",
+   "metadata": {},
+   "source": [
+    "**Task 5.1.4:** Open `poland-bankruptcy-data-2009.json` by opening the `data` folder to the left and then double-clicking on the file. 👈 "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5ea0bc23-8e21-4f55-8c39-db0384bd10b5",
+   "metadata": {},
+   "source": [
+    "How is the data organized? "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a2628097-59e1-4ab7-9979-c9dd9a0debba",
+   "metadata": {},
+   "source": [
+    "Curly brackets? Key-value pairs? It looks similar to a Python dictionary. It's important to note that JSON is not _exactly_ the same as a dictionary, but a lot of the same concepts apply. Let's try reading the file into a DataFrame and see what happens."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b94eaabd-a128-46e0-a764-fffbe1d48fb9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"693794696\", h=\"dd5b5ad116\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "111acd3e-28a6-43ab-84b0-4fa82eace401",
+   "metadata": {},
+   "source": [
+    "**Task 5.1.5:** Load the data into a DataFrame. \n",
+    "\n",
+    "- [Read a JSON file into a DataFrame using pandas.](../%40textbook/03-pandas-getting-started.ipynb#JSON-Files)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0fca0a10-98b4-4d33-b155-632dfec7b0a8",
+   "metadata": {
+    "editable": true,
+    "slideshow": {
+     "slide_type": ""
+    },
+    "tags": [
+     "raises-exception"
+    ]
+   },
    "outputs": [],
    "source": [
     "df = ...\n",
@@ -278,620 +250,479 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0459a629-e2b5-4a2e-a9e2-8243f9d552dd",
+   "id": "4ae3246e-eafc-4172-9a10-53f2222ae355",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Check your work\n",
-    "assert df.shape == (75883, 20), f\"`df` should have shape (75883, 20), not {df.shape}\""
+    "VimeoVideo(\"693794711\", h=\"fdb009c4eb\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "7d254a79-a14c-4547-9cfc-d3a4d938abc5",
+   "id": "f1ec41c9-8bf4-4285-ad3e-62a57e115074",
    "metadata": {},
    "source": [
-    "## Explore"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f33220cc-10d2-46c0-9a49-65e0a786a652",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415463\", h=\"86c306199f\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "48afaec2-737f-4a61-b2be-585f3c82560f",
-   "metadata": {},
-   "source": [
-    "**Task 4.4.7:** Combine the [`select_dtypes`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.select_dtypes.html) and [`nunique`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.nunique.html) methods to see if there are any high- or low-cardinality categorical features in the dataset. \n",
+    "Hmmm. It looks like something went wrong, and we're going to have to fix it. Luckily for us, there's an error message to help us figure out what's happening here:\n",
     "\n",
-    "- [What are <span id='term'>high- and low-cardinality features</span>?](../%40textbook/14-ml-classification.ipynb#High-cardinality-Features)\n",
-    "- [<span id='technique'>Determine the unique values in a column using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Determine-the-unique-values-in-a-column) \n",
-    "- [<span id='technique'>Subset a DataFrame's columns based on the column data types in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Subset-the-Columns-of-a-DataFrame-Based-on-Data-Types)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "04c7966d-7bfc-45ae-a80d-3ccb654dcfa1",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check for high- and low-cardinality categorical features\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "22aa716c-6908-4955-8f10-ddc40f12d91d",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415472\", h=\"1142d69e4a\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "24eacbde-4bc1-43bd-ac24-67c9e0aef96c",
-   "metadata": {},
-   "source": [
-    "**Task 4.4.8:** Add to your `wrangle` function so that the `\"caste_household\"` contains only the 10 largest caste groups. For the rows that are not in those groups, `\"caste_household\"` should be changed to `\"Other\"`.\n",
+    "<code style=\"background-color:#FEDDDE;\"><span style=\"color:#E45E5C\">ValueError</span>: Mixing dicts with non-Series may lead to ambiguous ordering.\n",
+    "</code>\n",
     "\n",
-    "- [<span id='technique'>Determine the unique values in a column using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Determine-the-unique-values-in-a-column) \n",
-    "- [<span id='technique'>Combine multiple categories in a Series using <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Combine-multiple-categories-in-a-Series)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "58f8e8d0-1f0e-4e44-a37f-0739a3d80215",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "df[\"caste_household\"].nunique()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "d7baa30f-ecfd-47ca-98da-4be89eefbc96",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert (\n",
-    "    df[\"caste_household\"].nunique() == 11\n",
-    "), f\"The `'caste_household'` column should only have 11 unique values, not {df['caste_household'].nunique()}.\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "d59e6d93-b806-4c85-a9da-15e1cd2b9502",
-   "metadata": {
-    "tags": []
-   },
-   "source": [
-    "## Split"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "36409eeb-6759-4e32-a185-0d3f1a6ceed8",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415515\", h=\"defc252edd\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "7dc16f7f-fa65-4244-b073-a0be9834ca7b",
-   "metadata": {},
-   "source": [
-    "**Task 4.4.9:** Create your feature matrix `X` and target vector `y`. Since our model will only consider building and household data, `X` should not include the municipality column `\"vdcmun_id\"`. Your target is `\"severe_damage\"`. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "ae8d83f9-d922-4c66-b029-7b138ba6cbc6",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "target = \"severe_damage\"\n",
-    "X = ...\n",
-    "y = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "73b08499-42da-4a53-8f0b-e117b9db6161",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert X.shape == (75883, 18), f\"The shape of `X` should be (75883, 18), not {X.shape}.\"\n",
-    "assert \"vdcmun_id\" not in X.columns, \"There should be no `'vdcmun_id'` column in `X`.\"\n",
-    "assert y.shape == (75883,), f\"The shape of `y` should be (75883,), not {y.shape}.\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "93681a6e-3480-41e5-9ce8-c9fd60552afb",
-   "metadata": {},
-   "source": [
-    "**Task 4.4.10:** Divide your data (`X` and `y`) into training and test sets using a randomized train-test split. Your test set should be 20% of your total data. Be sure to set a `random_state` for reproducibility."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "cc4e1368-1e5a-4940-90b7-20f20f966e3f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "X_train, X_test, y_train, y_test = ..."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "53a5ad9a-0b1a-4bf1-8335-a23a1ff2695b",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert X_train.shape == (\n",
-    "    60706,\n",
-    "    18,\n",
-    "), f\"The shape of `X_train` should be (60706, 18), not {X_train.shape}.\"\n",
-    "assert y_train.shape == (\n",
-    "    60706,\n",
-    "), f\"The shape of `y_train` should be (60706,), not {y_train.shape}.\"\n",
-    "assert X_test.shape == (\n",
-    "    15177,\n",
-    "    18,\n",
-    "), f\"The shape of `X_test` should be (15177, 18), not {X_test.shape}.\"\n",
-    "assert y_test.shape == (\n",
-    "    15177,\n",
-    "), f\"The shape of `y_test` should be (15177,), not {y_test.shape}.\""
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "111788b7-14fe-486c-9f89-2c078157cfd4",
-   "metadata": {
-    "tags": []
-   },
-   "source": [
-    "# Build Model"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "15c1824f-355f-47e4-b5a6-8cd1251792c7",
-   "metadata": {
-    "tags": []
-   },
-   "source": [
-    "## Baseline"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "6755e531-b6ff-4985-9fc5-0b6601eca074",
-   "metadata": {},
-   "source": [
-    "**Task 4.4.11:** Calculate the baseline accuracy score for your model.\n",
+    "What should we do? That error sounds serious, but the world is big, and we can't possibly be the first people to encounter this problem. When you come across an error, copy the message into a search engine and see what comes back. You'll get lots of results. The web has lots of places to look for solutions to problems like this one, and [Stack Overflow](https://stackoverflow.com/) is one of the best. [Click here to check out a possible solution to our problem.](https://stackoverflow.com/questions/57018859/valueerror-mixing-dicts-with-non-series-may-lead-to-ambiguous-ordering)\n",
     "\n",
-    "- [What's <span id='tool'>accuracy score</span>?](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)\n",
-    "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "10c219a0-3968-45dd-b389-def425836421",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "acc_baseline = ...\n",
-    "print(\"Baseline Accuracy:\", round(acc_baseline, 2))"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "d4da0d3d-6636-451d-bb90-d2914ce4bde8",
-   "metadata": {
-    "tags": []
-   },
-   "source": [
-    "## Iterate"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "b3e9324e-1d8d-4866-937f-151f44306a3d",
-   "metadata": {},
-   "source": [
-    "**Task 4.4.12:** Create a Pipeline called `model_lr`. It should have an `OneHotEncoder` transformer and a `LogisticRegression` predictor. Be sure you set the `use_cat_names` argument for your transformer to `True`.\n",
+    "There are three things to look for when you're browsing through solutions on Stack Overflow. \n",
     "\n",
-    "- [What's <span id='term'>logistic regression</span>?](../%40textbook/14-ml-classification.ipynb#Logistic-Regression)\n",
-    "- [What's <span id='term'>one-hot encoding</span>?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#One-Hot-Encoding)\n",
-    "- [<span id='technique'>Create a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Creating-a-Pipeline-in-scikit-learn)\n",
-    "- [<span id='technique'>Fit a model to training data in <span id='tool'>scikit-learn</span></span>.](../%40textbook/15-ml-regression.ipynb#Fitting-a-Model-to-Training-Data)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "4695890f-4302-478f-abbd-a32d3161f454",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "model_lr = ...\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "ba1581d6-59a2-4f06-ad41-dae616267740",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Check your work\n",
-    "assert isinstance(\n",
-    "    model_lr, Pipeline\n",
-    "), f\"`model_lr` should be a Pipeline, not type {type(model_lr)}.\"\n",
-    "assert isinstance(\n",
-    "    model_lr[0], OneHotEncoder\n",
-    "), f\"The first step in your Pipeline should be a OneHotEncoder, not type {type(model_lr[0])}.\"\n",
-    "assert isinstance(\n",
-    "    model_lr[-1], LogisticRegression\n",
-    "), f\"The last step in your Pipeline should be LogisticRegression, not type {type(model_lr[-1])}.\"\n",
-    "check_is_fitted(model_lr)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "4be0e001-c5c4-49f6-abc1-df1170267642",
-   "metadata": {},
-   "source": [
-    "## Evaluate"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "494110a5-51ab-40ca-a064-40e959990b61",
-   "metadata": {},
-   "source": [
-    "**Task 4.4.13:** Calculate the training and test accuracy scores for `model_lr`. \n",
+    "1. **Context:** A good question is specific; if you click through that link, you'll see that the person asks a **specific** question, gives some relevant information about their OS and hardware, and then offers the code that threw the error. That's important, because we need...\n",
+    "2. **Reproducible Code:** A good question also includes enough information for you to reproduce the problem yourself. After all, the only way to make sure the solution actually applies to your situation is to see if the code in the question throws the error you're having trouble with! In this case, the person included not only the code they used to get the error, but the actual error message itself. That would be useful on its own, but since you're looking for an actual solution to your problem, you're really looking for...\n",
+    "3. **An answer:** Not every question on Stack Overflow gets answered. Luckily for us, the one we've been looking at did. There's a big green check mark next to the first solution, which means that the person who asked the question thought that solution was the best one.\n",
     "\n",
-    "- [<span id='technique'>Calculate the accuracy score for a model in <span id='term'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)\n",
-    "- [<span id='technique'>Generate predictions using a trained model in <span id='term'>scikit-learn</span></span>.](../%40textbook/15-ml-regression.ipynb#Generating-Predictions-Using-a-Trained-Model)"
+    "Let's try it and see if it works for us too!"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a7f5399d-cd07-4483-8403-78f99cc8397f",
+   "id": "d3b9a1d0-341f-4b22-8b25-8a4c61b4b074",
    "metadata": {},
    "outputs": [],
    "source": [
-    "acc_train = ...\n",
-    "acc_test = ...\n",
+    "VimeoVideo(\"693794734\", h=\"fecea6a81e\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6991d9b9-997b-4b49-a30f-013ea02d8bf8",
+   "metadata": {},
+   "source": [
+    "**Task 5.1.6:** Using a context manager, open the file `poland-bankruptcy-data-2009.json` and load it as a dictionary with the variable name `poland_data`.\n",
     "\n",
-    "print(\"LR Training Accuracy:\", acc_train)\n",
-    "print(\"LR Validation Accuracy:\", acc_test)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "3f4cefe3-fcc2-498f-9be5-f324d753c52c",
-   "metadata": {},
-   "source": [
-    "# Communicate"
+    "- [What's a context manager?](../%40textbook/02-python-advanced.ipynb#Create-files-using-Context-Manager)\n",
+    "- [Open a file in Python.](../%40textbook/02-python-advanced.ipynb#Create-files-using-Context-Manager)\n",
+    "- [Load a JSON file into a dictionary using Python.](../%40textbook/01-python-getting-started.ipynb#Working-with-Dictionaries)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b563cabb-db9f-4b4e-82af-e66b8766579e",
+   "id": "f9e77c69-2afb-4c18-b03f-6bc4b7b855a9",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665415532\", h=\"00440f76a9\", width=600)"
+    "# Open file and load JSON\n",
+    "# write your code here\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d1f705ed-ec00-4664-85b0-c3c7faa920a9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(type(poland_data))"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "9551ac0a-d7f2-48f5-8e5b-5e1783318a14",
+   "id": "f9d1d062-074b-4a39-ab29-e8320c5a3977",
    "metadata": {},
    "source": [
-    "**Task 4.4.14:** First, extract the feature names and importances from your model. Then create a pandas Series named `feat_imp`, where the index is `features` and the values are your the exponential of the `importances`.\n",
+    "Okay! Now that we've successfully opened up our dataset, let's take a look and see what's there, starting with the keys. Remember, the **keys** in a dictionary are categories of things in a dataset.<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f4004d58-c427-4774-95e5-242350bb6c94",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"693794754\", h=\"18e70f4225\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "da816b30-050a-4387-ac01-39c0dc2e8a49",
+   "metadata": {},
+   "source": [
+    "**Task 5.1.7:** Print the keys for `poland_data`.\n",
     "\n",
-    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)\n",
-    "- [<span id='technique'>Access an object in a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)\n",
-    "- [<span id='technique'>Create a Series in <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Adding-Columns)"
+    "- [List the keys of a dictionary in Python.](../%40textbook/01-python-getting-started.ipynb#Dictionary-Keys)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "119c5a24-8246-4476-a518-7ffc94433c1c",
+   "id": "e5c9deb5-13a0-4d0d-959b-ac83eada9d43",
    "metadata": {},
    "outputs": [],
    "source": [
-    "features = ...\n",
-    "importances = ...\n",
-    "feat_imp = ...\n",
-    "feat_imp.head()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "612f935e-f492-4882-b9ad-6d594bc61204",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415552\", h=\"5b2383ccf8\", width=600)"
+    "# Print `poland_data` keys\n"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "c7a78530-86a7-46b6-a6a1-1b1a7dbc69fc",
+   "id": "65d49916-782c-4fb8-84d0-21bf4644e478",
    "metadata": {},
    "source": [
-    "**Task 4.4.15:** Create a horizontal bar chart with the ten largest coefficients from `feat_imp`. Be sure to label your x-axis `\"Odds Ratio\"`.\n",
+    "`schema` tells us how the data is structured, `metadata` tells us where the data comes from, and `data` is the data itself."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2ddbac0e-cb76-4a7d-99f9-020269507dae",
+   "metadata": {},
+   "source": [
+    "Now let's take a look at the values. Remember, the **values** in a dictionary are ways to describe the variable that belongs to a key."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ce5e14ac-c044-4bb8-912b-6e087724dcab",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"693794768\", h=\"8e5b53b0ca\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "59a2b7b2-4daf-4a2b-a408-58c712dda746",
+   "metadata": {},
+   "source": [
+    "**Task 5.1.8:** Explore the values associated with the keys in `poland_data`. What do each of them represent? How is the information associated with the `\"data\"` key organized?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "28b9916e-aa13-4453-9a23-c9bb2a4c17ec",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Continue Exploring `poland_data`\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "dd887da8-d504-455b-adb2-332123298dc1",
+   "metadata": {},
+   "source": [
+    "This dataset includes all the information we need to figure whether or not a Polish company went bankrupt in 2009. There's a bunch of features included in the dataset, each of which corresponds to some element of a company's balance sheet. You can explore the features by looking at the [data dictionary](./056-data-dictionary.ipynb). Most importantly, we also know whether or not the company went bankrupt. That's the last key-value pair."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2b5b25e6-4a78-414f-8286-b667d24c2826",
+   "metadata": {},
+   "source": [
+    "Now that we know what data we have for each company, let's take a look at how many companies there are."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bb74f065-07ae-4547-97c7-79601f4ae3e3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"693794783\", h=\"8d333027cc\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e8b5393c-7c8a-41b9-b8e9-91e6afa46f94",
+   "metadata": {},
+   "source": [
+    "**Task 5.1.9:** Calculate the number of companies included in the dataset.\n",
     "\n",
-    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)"
+    "- [Calculate the length of a list in Python.](../%40textbook/01-python-getting-started.ipynb#Working-with-Lists)\n",
+    "- [List the keys of a dictionary in Python.](../%40textbook/01-python-getting-started.ipynb#Dictionary-Keys)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "682d0caf-7006-4092-bd9b-d9addbf3a95d",
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0970da87-30d9-4c82-9f7e-e15dfa64ed19",
+   "id": "a062458c-18d3-4001-b716-bc2d70f4bc8b",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665415581\", h=\"d15477e14d\", width=600)"
+    "# Calculate number of companies\n"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "afa4d9bf-a35f-4cf0-98d3-8d048841fb17",
+   "id": "2d030ed0-def1-4dd9-82a9-5e6b4ad15a1c",
    "metadata": {},
    "source": [
-    "**Task 4.4.16:** Create a horizontal bar chart with the ten smallest coefficients from `feat_imp`. Be sure to label your x-axis `\"Odds Ratio\"`.\n",
+    "And then let's see how many features were included for one of the companies."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "fa923953-d59f-4311-996d-2bc41f65dace",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"693794797\", h=\"3c1eff82dc\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2068732e-830b-465e-9f73-02043e7a5a93",
+   "metadata": {},
+   "source": [
+    "**Task 5.1.10:** Calculate the number of features associated with `\"company_1\"`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e455d7c7-72df-41d0-8987-aa9dc26e7eff",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Calculate number of features\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "04b24ce6-00b3-4b09-bbd1-325780a80cb5",
+   "metadata": {},
+   "source": [
+    "Since we're dealing with data stored in a JSON file, which is common for semi-structured data, we can't assume that all companies have the same features. So let's check!"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bc52a27f-4409-4850-92eb-fd3bae9665cc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"693794810\", h=\"80e195944b\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d4aef7a8-09fc-466c-b27e-59a2eb1faaba",
+   "metadata": {},
+   "source": [
+    "**Task 5.1.11:** Iterate through the companies in `poland_data[\"data\"]` and check that they all have the same number of features.\n",
     "\n",
-    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)"
+    "- [What's an iterator?](../%40textbook/02-python-advanced.ipynb#Iterators-and-Iterables)\n",
+    "- [Access the items in a dictionary in Python.](../%40textbook/01-python-getting-started.ipynb#Working-with-Lists)\n",
+    "- [Write a for loop in Python.](../%40textbook/01-python-getting-started.ipynb#Working-with-for-Loops)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "9101bd1c-f52a-4015-9600-9a27f2c0dc0b",
+   "id": "abf4ddaa-aa83-4cfe-817c-886cce0ece35",
    "metadata": {},
    "outputs": [],
-   "source": []
+   "source": [
+    "# Iterate through companies\n"
+   ]
   },
   {
    "cell_type": "markdown",
-   "id": "d03bb3b6-e827-450f-9c2f-032bceacb59f",
+   "id": "477cba81-0a53-42d6-971f-20d79ca3eabb",
    "metadata": {},
    "source": [
-    "## Explore Some More"
+    "It looks like they do! "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "664e47ff-6c88-44fa-bf33-a0ce2bb253ab",
+   "metadata": {},
+   "source": [
+    "Let's put all this together. First, open up the compressed dataset and load it directly into a dictionary."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "d4f82769-3322-400c-a466-53c2c6faf96e",
+   "id": "f5a5c6e0-9da7-4e7f-ae49-3b57afaa650e",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665415631\", h=\"90ba264392\", width=600)"
+    "VimeoVideo(\"693794824\", h=\"dbfc9b43ee\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "70c0be91-6417-4377-8d86-481687202ca7",
+   "id": "9133e0fe-fa33-485f-975a-224028432782",
    "metadata": {},
    "source": [
-    "**Task 4.4.17:** Which municipalities saw the highest proportion of severely damaged buildings? Create a DataFrame `damage_by_vdcmun` by grouping `df` by `\"vdcmun_id\"` and then calculating the mean of the `\"severe_damage\"` column. Be sure to sort `damage_by_vdcmun` from highest to lowest proportion.\n",
+    "**Task 5.1.12:** Using a context manager, open the file `poland-bankruptcy-data-2009.json.gz` and load it as a dictionary with the variable name `poland_data_gz`. \n",
     "\n",
-    "- [<span id='technique'>Aggregate data using the groupby method in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Series-and-Groupby)"
+    "- [What's a context manager?](../%40textbook/02-python-advanced.ipynb#Create-files-using-Context-Manager)\n",
+    "- [Open a file in Python.](../%40textbook/02-python-advanced.ipynb#Create-files-using-Context-Manager)\n",
+    "- [Load a JSON file into a dictionary using Python.](../%40textbook/01-python-getting-started.ipynb#Working-with-Dictionaries)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "43523398-0682-4ec3-aebd-8f032b819eec",
+   "id": "66f08f8d-3e3d-4ca7-a0e9-939e0ac1c570",
    "metadata": {},
    "outputs": [],
    "source": [
-    "damage_by_vdcmun = ...\n",
-    "damage_by_vdcmun"
+    "# Open compressed file and load contents\n",
+    "# write your code here\n"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b4564954-dcb1-4064-a68d-017de1566081",
+   "id": "2080edb7-c544-4522-8ba8-9705b87bed7d",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Check your work\n",
-    "assert isinstance(\n",
-    "    damage_by_vdcmun, pd.DataFrame\n",
-    "), f\"`damage_by_vdcmun` should be a Series, not type {type(damage_by_vdcmun)}.\"\n",
-    "assert damage_by_vdcmun.shape == (\n",
-    "    11,\n",
-    "    1,\n",
-    "), f\"`damage_by_vdcmun` should be shape (11,1), not {damage_by_vdcmun.shape}.\""
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "ad93a2fc-39d0-4b0c-bf7d-96f4c57c0dcc",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415651\", h=\"9b5244dec1\", width=600)"
+    "print(type(poland_data_gz))"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "d471d9eb-ce26-4885-adfa-a60ae23771fe",
+   "id": "e2590f8f-0c9c-4eb4-a317-d65fed808a85",
    "metadata": {},
    "source": [
-    "**Task 4.4.18:** Create a line plot of `damage_by_vdcmun`. Label your x-axis `\"Municipality ID\"`, your y-axis `\"% of Total Households\"`, and give your plot the title `\"Household Damage by Municipality\"`.\n",
-    "\n",
-    "- [Create a line plot in Matplotlib.](../%40textbook/07-visualization-pandas.ipynb#Line-Plots)"
+    "Since we now have two versions of the dataset — one compressed and one uncompressed — we need to compare them to make sure they're the same."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "e9d313e5-d5b6-47b0-9525-4b61ac7fb3f1",
+   "id": "ebe76fcb-fbfd-491b-8da3-51d71aaf9dfb",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Plot line\n",
-    "\n",
-    "plt.xlabel(\"Municipality ID\")\n",
-    "plt.ylabel(\"% of Total Households\")\n",
-    "plt.title(\"Severe Damage by Municipality\");"
+    "VimeoVideo(\"693794837\", h=\"925b5e4e5a\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "a662e1c8-cbe0-469c-9cb9-abe428b527eb",
+   "id": "3dba18a9-df27-4c1c-a5ab-f0382011fbbe",
    "metadata": {},
    "source": [
-    "Given the plot above, our next question is: How are the Gurung and Kumal populations distributed across these municipalities?"
+    "**Task 5.1.13:** Explore `poland_data_gz` to confirm that is contains the same data as `data`, in the same format. <span style=\"display: none\">WorldQuant University Canary</span> "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "20baf3f8-9896-4498-a8c4-8365fc399b7a",
+   "id": "16aaa185-fd67-4d75-bf52-97568b2d31c0",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"665415693\", h=\"fb2e54aa04\", width=600)"
+    "# Explore `poland_data_gz`\n"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "afa0fb8f-c496-4288-94ce-f7ec7db0b2f3",
+   "id": "f41b5df8-2638-4364-a8ce-a8ade23e5d27",
    "metadata": {},
    "source": [
-    "**Task 4.4.19:** Create a new column in `damage_by_vdcmun` that contains the the proportion of Gurung households in each municipality.\n",
-    "\n",
-    "- [<span id='technique'>Aggregate data using the groupby method in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Series-and-Groupby)\n",
-    "- [<span id='technique'>Create a Series in <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Adding-Columns)"
+    "Looks good! Now that we have an uncompressed dataset, we can turn it into a DataFrame using `pandas`."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b8689846-c1e7-4127-b342-1758bbb6fc28",
+   "id": "ee85b6f6-b998-4b64-b3d9-51d14d65c5e0",
    "metadata": {},
    "outputs": [],
    "source": [
-    "damage_by_vdcmun[\"Gurung\"] = ...\n",
-    "damage_by_vdcmun"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0bd137d5-068f-4f58-982d-539cd98d47b5",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415707\", h=\"9b29c23434\", width=600)"
+    "VimeoVideo(\"693794853\", h=\"b74ef86783\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "caea7d3d-ad20-4d81-b1a5-42cb7deccd4b",
+   "id": "da3e7183-9363-421b-82ee-68f70639a876",
    "metadata": {},
    "source": [
-    "**Task 4.4.20:** Create a new column in `damage_by_vdcmun` that contains the the proportion of Kumal households in each municipality. Replace any `NaN` values in the column with `0`.\n",
+    "**Task 5.1.14:** Create a DataFrame `df` that contains the all companies in the dataset, indexed by `\"company_id\"`. Remember the principles of *tidy data* that you learned in Project 1, and make sure your DataFrame has shape `(9977, 65)`. \n",
     "\n",
-    "- [<span id='technique'>Aggregate data using the groupby method in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Series-and-Groupby)\n",
-    "- [<span id='technique'>Create a Series in <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Adding-Columns)"
+    "- [Create a DataFrame from a dictionary in pandas.](../%40textbook/03-pandas-getting-started.ipynb#Dictionaries)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "221554ef-367c-413a-8ccb-07eb7df22754",
+   "id": "10dbd9d5-bfe0-46a8-9601-3b5dd5c10b9e",
    "metadata": {},
    "outputs": [],
    "source": [
-    "damage_by_vdcmun[\"Kumal\"] = ...\n",
-    "damage_by_vdcmun"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9d00c957-2ddc-4a2c-8fd8-82e7745a17db",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"665415729\", h=\"8d0712c306\", width=600)"
+    "# write you code here\n",
+    "df = ...\n",
+    "\n",
+    "print(df.shape)\n",
+    "df.head()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "282c833c-3fc4-4be8-8d24-edd29b199f68",
+   "id": "14acd9a3-683f-4fe9-859a-76d44260529e",
    "metadata": {},
    "source": [
-    "**Task 4.4.21:** Create a visualization that combines the line plot of severely damaged households you made above with a stacked bar chart showing the proportion of Gurung and Kumal households in each district. Label your x-axis `\"Municipality ID\"`, your y-axis `\"% of Total Households\"`.\n",
-    "\n",
-    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)\n",
-    "- [<span id='technique'>Drop a column from a DataFrame using <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Dropping-Columns)"
+    "## Import"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c7b44913-7519-455c-ae90-a079dd36124e",
+   "metadata": {},
+   "source": [
+    "Now that we have everything set up the way we need it to be, let's combine all these steps into a single function that will decompress the file, load it into a DataFrame, and return it to us as something we can use."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "343162ee-e9b9-4f32-911d-1ae644aa3d8c",
+   "id": "068945bd-efdf-45e1-b1ca-047c58922085",
    "metadata": {},
    "outputs": [],
    "source": [
-    "\n",
-    "plt.xlabel(\"Municipality ID\")\n",
-    "plt.ylabel(\"% of Total Households\")\n",
-    "plt.title(\"Household Caste by Municipality\")\n",
-    "plt.legend();"
+    "VimeoVideo(\"693794879\", h=\"f51a3a342f\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "41759968",
+   "id": "1ff20787-5093-4123-af10-2284a7cca708",
+   "metadata": {},
+   "source": [
+    "**Task 5.1.15:** Create a `wrangle` function that takes the name of a compressed file as input and returns a tidy DataFrame. After you confirm that your function is working as intended, submit it to the grader. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "79e174b4-8859-4da1-b238-c02e19ed3181",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def wrangle(filename):\n",
+    "    return df"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "11940bd7-820c-4304-b3b9-3249e1ee6693",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = wrangle(\"data/poland-bankruptcy-data-2009.json.gz\")\n",
+    "print(df.shape)\n",
+    "df.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "55564cf1",
    "metadata": {
     "deletable": false,
     "editable": false
