@@ -2,7 +2,7 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "a38665e1-edaf-45c9-ac69-3862e5ff7831",
+   "id": "7d1f126f-bd15-4c83-b5a2-b255823aecf1",
    "metadata": {
     "editable": true,
     "slideshow": {
@@ -11,68 +11,54 @@
     "tags": []
    },
    "source": [
-    "<font size=\"+3\"><strong>5.2. Imbalanced Data</strong></font>"
+    "<font size=\"+3\"><strong>5.3. Ensemble Models: Random Forest</strong></font>"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "ef5d6484-df67-482b-a062-394e715c642e",
-   "metadata": {
-    "editable": true,
-    "slideshow": {
-     "slide_type": ""
-    },
-    "tags": []
-   },
+   "id": "376a47c5-c097-412a-9ee7-a65b7ed7b8e8",
+   "metadata": {},
    "source": [
-    "In the last lesson, we prepared the data. \n",
+    "So far in this project, we've learned how to retrieve and decompress data, and how to manage imbalanced data to build a decision-tree model.\n",
     "\n",
-    "In this lesson, we're going to explore some of the features of the dataset, use visualizations to help us understand those features, and develop a model that solves the problem of imbalanced data by under- and over-sampling."
+    "In this lesson, we're going to expand our decision tree model into an entire forest (an example of something called an **ensemble model**); learn how to use a **grid search** to tune hyperparameters; and create a function that loads data and a pre-trained model, and uses that model to generate a Series of predictions."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "e89949a0-4a09-4a49-9f79-b51c4b34f1d8",
-   "metadata": {
-    "editable": true,
-    "slideshow": {
-     "slide_type": ""
-    },
-    "tags": []
-   },
+   "id": "8e4a0490-5a15-456a-9925-804c62ec1c7b",
+   "metadata": {},
    "outputs": [],
    "source": [
     "import gzip\n",
     "import json\n",
-    "import pickle\n",
+    "import pickle \n",
     "\n",
     "import matplotlib.pyplot as plt\n",
     "import pandas as pd\n",
-    "import seaborn as sns\n",
     "from imblearn.over_sampling import RandomOverSampler\n",
-    "from imblearn.under_sampling import RandomUnderSampler\n",
     "from IPython.display import VimeoVideo\n",
+    "from sklearn.ensemble import RandomForestClassifier\n",
     "from sklearn.impute import SimpleImputer\n",
     "from sklearn.metrics import ConfusionMatrixDisplay\n",
-    "from sklearn.model_selection import train_test_split\n",
-    "from sklearn.pipeline import make_pipeline\n",
-    "from sklearn.tree import DecisionTreeClassifier"
+    "from sklearn.model_selection import GridSearchCV, cross_val_score, train_test_split\n",
+    "from sklearn.pipeline import make_pipeline"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "fd1507d9-7ecd-4e3c-934e-d2257478ba99",
+   "id": "cc28305a-cf2f-4af9-9d90-cf0facc9ead6",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694058667\", h=\"44426f200b\", width=600)"
+    "VimeoVideo(\"694695674\", h=\"538b4d2725\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "2209334e-f9a2-4764-83d8-150e25c5017f",
+   "id": "fd9c02a5-b79a-41d6-8371-1ca5948979d8",
    "metadata": {},
    "source": [
     "# Prepare Data"
@@ -80,7 +66,15 @@
   },
   {
    "cell_type": "markdown",
-   "id": "dd41eebd-6443-4b5f-9392-641506cd6589",
+   "id": "794a1a5c-5927-46ae-b5f7-786f932bceba",
+   "metadata": {},
+   "source": [
+    "As always, we'll begin by importing the dataset."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7fc1f61c-c49b-4c96-a173-0c4f45430562",
    "metadata": {},
    "source": [
     "## Import"
@@ -88,52 +82,29 @@
   },
   {
    "cell_type": "markdown",
-   "id": "1a5b0717-0975-441c-9036-963c2c432df8",
+   "id": "22d9d776-4ab6-4cef-8f2a-ec58505bdf70",
    "metadata": {},
    "source": [
-    "As always, we need to begin by bringing our data into the project, and the function we developed in the previous module is exactly what we need. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "0674563c-ede3-4440-9992-3c2992655704",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058628\", h=\"00b4cfd027\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "9261a342-9846-4d0c-b653-9ac0d101fdf8",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.1:** Complete the `wrangle` function below using the code you developed in the last lesson. Then use it to import `poland-bankruptcy-data-2009.json.gz` into the DataFrame `df`.\n",
+    "**Task 5.3.1:** Complete the `wrangle` function below using the code you developed in the  lesson 5.1. Then use it to import `poland-bankruptcy-data-2009.json.gz` into the DataFrame `df`.\n",
     "\n",
-    "- [<span id='technique'>Write a function in <span id='tool'>Python</span></span>.](../%40textbook/02-python-advanced.ipynb#Functions)"
+    "- [<span id='technique'>Write a function in <span id='tool'>Python</span></span>.](../%40textbook/02-python-advanced.ipynb#Functions)<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "8189d8c1-e5ad-4739-9502-3e1982998139",
+   "id": "f16a82a1-260d-410b-9c72-97e23e0e302c",
    "metadata": {},
    "outputs": [],
    "source": [
     "def wrangle(filename):\n",
-    "    \n",
-    "    # Open compressed file, load into dictionary\n",
-    "\n",
-    "    # Load dictionary into DataFrame, set index\n",
-    "\n",
     "    return df"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "25b19635-4c1a-4a3f-85e1-dfe462874c20",
+   "id": "c98d5162-f01f-47a2-a538-dc98e9e896d3",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -144,376 +115,20 @@
   },
   {
    "cell_type": "markdown",
-   "id": "e89f608b-1e91-42d5-b1ce-8008eaa51ef8",
-   "metadata": {},
-   "source": [
-    "## Explore"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "bff799dd-2b03-4122-972a-c93ccec20f8a",
-   "metadata": {},
-   "source": [
-    "Let's take a moment to refresh our memory on what's in this dataset. In the last lesson, we noticed that the data was stored in a JSON file (similar to a Python dictionary), and we explored the key-value pairs. This time, we're going to look at what the values in those pairs actually are."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "fc31dd1f-4dea-4beb-9446-86775b9f1aee",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058591\", h=\"8fc20629aa\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "d821578e-5c6b-4c5d-8beb-d1904a9f2243",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.2:** Use the `info` method to explore `df`. What type of features does this dataset have? Which column is the target? Are there columns will missing values that we'll need to address?\n",
-    "\n",
-    "- [Inspect a DataFrame using the `shape`, `info`, and `head` in pandas.](../%40textbook/03-pandas-getting-started.ipynb#Inspecting-DataFrames)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "03e4b625-da67-4322-8598-4ea4e5de2896",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Inspect DataFrame\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "0743bccb-2695-478f-b983-3f1345013ea3",
-   "metadata": {},
-   "source": [
-    "That's solid information. We know all our features are numerical and that we have missing data. But, as always, it's a good idea to do some visualizations to see if there are any interesting trends or ideas we should keep in mind while we work. First, let's take a look at how many firms are bankrupt, and how many are not."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6ac24acf-1ce9-43d0-b563-8fd530809f96",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058537\", h=\"01caf9ae83\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "91a64015-cca6-40e7-b236-1c38ff0354e9",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.3:** Create a bar chart of the value counts for the `\"bankrupt\"` column. You want to calculate the relative frequencies of the classes, not the raw count, so be sure to set the `normalize` argument to `True`.\n",
-    "\n",
-    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Bar-Charts)\n",
-    "- [What's a <span id='technique'>majority class</span>?](../%40textbook/14-ml-classification.ipynb#Majority-and-Minority-Classes)\n",
-    "- [What's a <span id='technique'>minority class</span>?](../%40textbook/14-ml-classification.ipynb#Majority-and-Minority-Classes)\n",
-    "- [What's a positive class?](../%40textbook/14-ml-classification.ipynb#Positive-and-Negative-Classes)\n",
-    "- [What's a negative class?](../%40textbook/14-ml-classification.ipynb#Positive-and-Negative-Classes)\n",
-    "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)\n",
-    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "49357719-acf1-4180-8fde-8ad1b79d281b",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Plot class balance\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "6b4b37f1-4a10-479c-80df-d7d073d8c005",
-   "metadata": {},
-   "source": [
-    "That's good news for Poland's economy! Since it looks like most of the companies in our dataset are doing all right for themselves, let's drill down a little farther. However, it also shows us that we have an imbalanced dataset, where our majority class is far bigger than our minority class.\n",
-    "\n",
-    "In the last lesson, we saw that there were 64 features of each company, each of which had some kind of numerical value. It might be useful to understand where the values for one of these features cluster, so let's make a boxplot to see how the values in `\"feat_27\"` are distributed."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "bccc1725-792e-481a-bbb6-4e2bc7dd4046",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058487\", h=\"6e066151d9\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "42cbe8e8-265e-47ef-83e9-2956f6c746ff",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.4:** Use seaborn to create a boxplot that shows the distributions of the `\"feat_27\"` column for both groups in the `\"bankrupt\"` column. Remember to label your axes. \n",
-    "\n",
-    "- [What's a <span id='term'>boxplot</span>?](../%40textbook/06-visualization-matplotlib.ipynb#Boxplots)\n",
-    "- [<span id='technique'>Create a boxplot using <span id='tool'>Matplotlib</span></span>.](../%40textbook/06-visualization-matplotlib.ipynb#Boxplots)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "196afdf0-15bb-48ce-8b14-dc4a660d8253",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Create boxplot\n",
-    "\n",
-    "\n",
-    "\n",
-    "\n",
-    "plt.xlabel(\"Bankrupt\")\n",
-    "plt.ylabel(\"POA / financial expenses\")\n",
-    "plt.title(\"Distribution of Profit/Expenses Ratio, by Class\");"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "028779e4-1e06-440f-b12e-c1c13fcfc4eb",
-   "metadata": {},
-   "source": [
-    "Why does this look so funny? Remember that boxplots exist to help us see the quartiles in a dataset, and this one doesn't really do that. Let's check the distribution of `\"feat_27\"`to see if we can figure out what's going on here."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9f635493-679e-4d48-8d68-4523ce908ef9",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058435\", h=\"8f0ae805d6\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "7636d728-345d-44af-986b-521d509bed52",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.5:** Use the `describe` method on the column for `\"feat_27\"`. What can you tell about the distribution of the data based on the mean and median?"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "dd909c80-6bb1-4da3-9945-75e3c8e9a68b",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Summary statistics for `feat_27`\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "956e3938-f05d-4ab4-8c7c-1c128201240b",
-   "metadata": {},
-   "source": [
-    "Hmmm. Note that the median is around 1, but the mean is over 1000. That suggests that this feature is skewed to the right. Let's make a histogram to see what the distribution actually looks like."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "85af2af0-f048-47eb-a0be-cbdbc8cca586",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058398\", h=\"1078bb6d8b\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "3334b78f-c578-4fe8-867c-aaf301cf07c3",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.6:** Create a histogram of `\"feat_27\"`. Make sure to label x-axis `\"POA / financial expenses\"`, the y-axis `\"Count\"`, and use the title `\"Distribution of Profit/Expenses Ratio\"`.\n",
-    "\n",
-    "- [What's a histogram?](../%40textbook/06-visualization-matplotlib.ipynb#Histograms)\n",
-    "- [Create a histogram using Matplotlib.](../%40textbook/06-visualization-matplotlib.ipynb#Histograms) "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "4889da74-cb9d-4f21-a17a-823c9955fbdf",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Plot histogram of `feat_27`\n",
-    "\n",
-    "\n",
-    "plt.xlabel(\"POA / financial expenses\")\n",
-    "plt.ylabel(\"Count\"),\n",
-    "plt.title(\"Distribution of Profit/Expenses Ratio\");"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "38583fa5-9cf8-4021-88f5-4f486c636e59",
-   "metadata": {},
-   "source": [
-    "Aha! We saw it in the numbers and now we see it in the histogram. The data is very skewed. So, in order to create a helpful boxplot, we need to trim the data. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "77b8aaa6-ee87-464c-a894-8e3885000d10",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058328\", h=\"4aecdc442d\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "ac83aeab-48a6-4a18-9b5a-3768fd69d48f",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.7:** Recreate the boxplot that you made above, this time only using the values for `\"feat_27\"` that fall between the `0.1` and `0.9` quantiles for the column.\n",
-    "\n",
-    "- [What's a boxplot?](../%40textbook/06-visualization-matplotlib.ipynb#Boxplots)\n",
-    "- [What's a quantile?](../%40textbook/05-pandas-summary-statistics.ipynb#Calculate-the-Quantiles-for-a-Series)\n",
-    "- [Calculate the quantiles for a Series in pandas.](../%40textbook/05-pandas-summary-statistics.ipynb#Calculate-the-Quantiles-for-a-Series)\n",
-    "- [Create a boxplot using Matplotlib.](../%40textbook/06-visualization-matplotlib.ipynb#Boxplots)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "94328747-6212-4505-9d8d-39c4b68ef126",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Create clipped boxplot\n",
-    "\n",
-    "plt.xlabel(\"Bankrupt\")\n",
-    "plt.ylabel(\"POA / financial expenses\")\n",
-    "plt.title(\"Distribution of Profit/Expenses Ratio, by Bankruptcy Status\");"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "68ad9d1b-3dc4-413e-8264-f5e2058c9c2d",
-   "metadata": {},
-   "source": [
-    "That makes a lot more sense. Let's take a look at some of the other features in the dataset to see what else is out there."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "460743a9-1be1-438f-a7bd-591dfafa8385",
-   "metadata": {},
-   "source": [
-    "<div class=\"alert alert-info\" role=\"alert\">\n",
-    "    <p><b>More context on <code>\"feat_27\"</code>:</b> <em>Profit on operating activities</em> is profit that a company makes through its \"normal\" operations. For instance, a car company profits from the sale of its cars. However, a company may have other forms of profit, such as financial investments. So a company's <em>total profit</em> may be positive even when its profit on operating activities is negative.\n",
-    "    <p><em>Financial expenses</em> include things like interest due on loans, and does not include \"normal\" expenses (like the money that a car company spends on raw materials to manufacture cars). \n",
-    "   </div>"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "3a6390ae-0647-496c-8b45-da345b2baffc",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.8:** Repeat the exploration you just did for `\"feat_27\"` on two other features in the dataset. Do they show the same skewed distribution? Are there large differences between bankrupt and solvent companies?"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "051b35a0",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Explore another feature"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "9bee0894-eeb3-48fa-84b9-50bb3f053c9d",
-   "metadata": {},
-   "source": [
-    "Looking at other features, we can see that they're skewed, too. This will be important to keep in mind when we decide what type of model we want to use.\n",
-    "\n",
-    "Another important consideration for model selection is whether there are any issues with multicollinearity in our model. Let's check."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "1916f298-bd7e-4a18-9b28-d9d928f5c3bd",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058273\", h=\"85b3be2f63\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "dac54512-c22d-475f-9fbf-c0d5ce8946da",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.9:** Plot a correlation heatmap of features in `df`. Since `\"bankrupt\"` will be your target, you don't need to include it in your heatmap.\n",
-    "\n",
-    "- [What's a <span id='term'>heatmap?](../%40textbook/09-visualization-seaborn.ipynb#Correlation-Heatmaps)\n",
-    "- [<span id='technique'>Create a correlation matrix in <span id='tool'>pandas.](../%40textbook/07-visualization-pandas.ipynb#Correlation-Matrices)\n",
-    "- [<span id='technique'>Create a heatmap in <span id='tool'>seaborn.](../%40textbook/09-visualization-seaborn.ipynb#Correlation-Heatmaps)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "40887a1b-bcb2-4ad2-af68-bea899d0c434",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "corr = ...\n"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "c87d1c97-2e52-4bfa-aa15-640dcb2bb2e0",
-   "metadata": {},
-   "source": [
-    "So what did we learn from this EDA? First, our data is imbalanced. This is something we need to address in our data preparation. Second, many of our features have missing values that we'll need to impute. And since the features are highly skewed, the best imputation strategy is likely median, not mean. Finally, we have autocorrelation issues, which means that we should steer clear of linear models, and try a tree-based model instead."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "2f852aed-4154-4b49-9e40-af3fb52caee0",
-   "metadata": {},
+   "id": "cafccb53-dc9f-4eaa-98c8-42357ba86eb0",
+   "metadata": {
+    "tags": []
+   },
    "source": [
     "## Split"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "37fa80b9-5bf4-4ced-8c0f-050b8514e1e6",
+   "id": "b2ecbffd-7743-4102-8b84-bfbbdf98f601",
    "metadata": {},
    "source": [
-    "So let's start building that model. If you need a refresher on how and why we split data in these situations, take a look back at the Time Series module."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "034eddda-8e40-47eb-95fe-f31d0e88b929",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.10:** Create your feature matrix `X` and target vector `y`. Your target is `\"bankrupt\"`. \n",
+    "**Task 5.3.2:** Create your feature matrix `X` and target vector `y`. Your target is `\"bankrupt\"`. \n",
     "\n",
     "- [What's a <span id='term'>feature matrix</span>?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
     "- [What's a <span id='term'>target vector</span>?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
@@ -524,7 +139,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3c1ca108-7089-45f3-8ec7-bc8e738808d9",
+   "id": "f1093cff-131c-496f-8f00-13d837774083",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -538,18 +153,18 @@
   },
   {
    "cell_type": "markdown",
-   "id": "0c5e37a4-6104-4422-b5ca-493eeb4fed55",
+   "id": "376f7aa4-1146-4b7f-932b-1834f953fe49",
    "metadata": {},
    "source": [
-    "In order to make sure that our model can generalize, we need to put aside a test set that we'll use to evaluate our model once it's trained. "
+    "Since we're not working with time series data, we're going to randomly divide our dataset into training and test sets — just like we did in project 4."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "9500b64a-eaa5-4a89-98a4-8370717be4ff",
+   "id": "bba7ebc0-5785-4e19-803b-3ab0a28c76ea",
    "metadata": {},
    "source": [
-    "**Task 5.2.11:** Divide your data (`X` and `y`) into training and test sets using a randomized train-test split. Your validation set should be 20% of your total data. And don't forget to set a `random_state` for reproducibility. \n",
+    "**Task 5.3.3:** Divide your data (`X` and `y`) into training and test sets using a randomized train-test split. Your test set should be 20% of your total data. And don't forget to set a `random_state` for reproducibility. \n",
     "\n",
     "- [<span id='technique'>Perform a randomized train-test split using <span id='tool'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Randomized-Train-Test-split)"
    ]
@@ -557,11 +172,12 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "4e1cb3c3-231d-47e5-9361-bec2f83ef353",
+   "id": "37be42f8-bf07-4e7d-921a-e6fe7f9e861f",
    "metadata": {},
    "outputs": [],
    "source": [
     "X_train, X_test, y_train, y_test = ...\n",
+    "\n",
     "\n",
     "print(\"X_train shape:\", X_train.shape)\n",
     "print(\"y_train shape:\", y_train.shape)\n",
@@ -571,96 +187,36 @@
   },
   {
    "cell_type": "markdown",
-   "id": "a24fc49d-6b3e-424d-8be2-4ff085b8c641",
+   "id": "083eb52a-35ee-424b-9594-8427651fc37f",
    "metadata": {},
    "source": [
-    "Note that if we wanted to tune any hyperparameters for our model, we'd do another split here, further dividing the training set into training and validation sets. However, we're going to leave hyperparameters for the next lesson, so no need to do the extra split now."
+    "You might have noticed that we didn't create a validation set, even though we're planning on tuning our model's hyperparameters in this lesson. That's because we're going to use cross-validation, which we'll talk about more later on."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "35999f04-63f3-4178-8e31-75dc45f461ba",
+   "id": "9df75fb0-0c88-40ad-84df-685325039dd7",
    "metadata": {},
    "source": [
     "## Resample"
    ]
   },
   {
-   "cell_type": "markdown",
-   "id": "5e6dab03-4e55-4d2a-a9a4-6068aa274ac6",
-   "metadata": {},
-   "source": [
-    "Now that we've split our data into training and validation sets, we can address the class imbalance we saw during our EDA. One strategy is to resample the training data. (This will be different than the resampling we did with time series data in Project 3.) There are many to do this, so let's start with under-sampling."
-   ]
-  },
-  {
    "cell_type": "code",
    "execution_count": null,
-   "id": "6cf88493-1c74-4c0a-8c2e-3c91952c77f8",
+   "id": "9f5308b5-95d3-49b8-9845-392cc438b386",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694058220\", h=\"00c3a98358\", width=600)"
+    "VimeoVideo(\"694695662\", h=\"dc60d76861\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "53713713-d9ba-4776-936a-95e327b7d202",
+   "id": "ecb07cec-9400-4619-813b-92e34eb651ba",
    "metadata": {},
    "source": [
-    "**Task 5.2.12:** Create a new feature matrix `X_train_under` and target vector `y_train_under` by performing random under-sampling on your training data.\n",
-    "\n",
-    "- [What is under-sampling?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Under-sampling)\n",
-    "- [Perform random under-sampling using imbalanced-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Under-sampling)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "676afb5f-268b-4080-9825-1a4f69e7b558",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "under_sampler = ...\n",
-    "X_train_under, y_train_under = ...\n",
-    "print(X_train_under.shape)\n",
-    "X_train_under.head()"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "b84cf5b1-2c98-4531-97cf-5855d778a0e8",
-   "metadata": {},
-   "source": [
-    "<div class=\"alert alert-info\" role=\"alert\">\n",
-    "    <b>Note:</b> Depending on the random state you set above, you may get a different  shape for <code>X_train_under</code>. Don't worry, it's normal!\n",
-    "</div>"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "dd0939f0-25dc-49a0-9421-f1a7de418728",
-   "metadata": {},
-   "source": [
-    "And then we'll over-sample."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6b735652-e3af-4fa4-983a-c2adb3581514",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058177\", h=\"5cef977f2d\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "5f1a2efc-3bba-4b7a-b6bb-9dab726d7ab5",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.13:** Create a new feature matrix `X_train_over` and target vector `y_train_over` by performing random over-sampling on your training data.\n",
+    "**Task 5.3.4:** Create a new feature matrix `X_train_over` and target vector `y_train_over` by performing random over-sampling on the training data.\n",
     "\n",
     "- [What is over-sampling?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Over-sampling)\n",
     "- [Perform random over-sampling using imbalanced-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Over-sampling)"
@@ -669,19 +225,19 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "1ddf4a38-4635-4255-ae18-d0a396d4cfa5",
+   "id": "5594111e-ab15-43b9-a8dd-0b68ed1ccb20",
    "metadata": {},
    "outputs": [],
    "source": [
     "over_sampler = ...\n",
     "X_train_over, y_train_over = ...\n",
-    "print(X_train_over.shape)\n",
+    "print(\"X_train_over shape:\", X_train_over.shape)\n",
     "X_train_over.head()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "d18094c9-d024-4570-ba60-e3c820ec7f66",
+   "id": "08127742-3d7c-4f3a-95d8-a1af6d2ba88d",
    "metadata": {},
    "source": [
     "# Build Model"
@@ -689,7 +245,15 @@
   },
   {
    "cell_type": "markdown",
-   "id": "b093e0e2-1044-4969-81e4-05c1c6276a26",
+   "id": "99917563-9d78-4653-98d1-d1884722406c",
+   "metadata": {},
+   "source": [
+    "Now that we have our data set up the right way, we can build the model. 🏗"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f03517a4-e9c7-46f9-ab95-f1ce65a67573",
    "metadata": {},
    "source": [
     "## Baseline"
@@ -697,28 +261,10 @@
   },
   {
    "cell_type": "markdown",
-   "id": "751a3ea4-e345-4a9d-b942-ec438dc3d76e",
+   "id": "7245db1e-6612-4952-8302-4b0fdfeb337a",
    "metadata": {},
    "source": [
-    "As always, we need to establish the baseline for our model. Since this is a classification problem, we'll use accuracy score."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "5d0bedaa-0569-4326-ae97-3a036995d52a",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058140\", h=\"7ae111412f\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "f18915ca-86cf-46b8-91e5-0afbcbceb842",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.14:** Calculate the baseline accuracy score for your model.\n",
+    "**Task 5.3.5:** Calculate the baseline accuracy score for your model.\n",
     "\n",
     "- [What's <span id='tool'>accuracy score</span>?](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)\n",
     "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)"
@@ -727,7 +273,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "2f2897bc-04b0-476b-b97d-d219f274a645",
+   "id": "3a181afb-a78a-4e85-91b1-a07217bccba9",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -737,15 +283,7 @@
   },
   {
    "cell_type": "markdown",
-   "id": "e65e1626-f07b-4c5f-8aa8-bce7a3222926",
-   "metadata": {},
-   "source": [
-    "Note here that, because our classes are imbalanced, the baseline accuracy is very high. We should keep this in mind because, even if our trained model gets a high validation accuracy score, that doesn't mean it's actually *good.* "
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "a0b46478-78d8-4183-b990-fc264ef9a68b",
+   "id": "7fbd8830-6b46-43a3-ae06-91aaf2400571",
    "metadata": {},
    "source": [
     "## Iterate"
@@ -753,61 +291,412 @@
   },
   {
    "cell_type": "markdown",
-   "id": "7596eb36-4b1a-4140-863e-e4ba5155d33c",
+   "id": "9b0f9f51-75ff-405c-975e-09a3133d9523",
    "metadata": {},
    "source": [
-    "Now that we have a baseline, let's build a model to see if we can beat it."
+    "So far, we've built single models that predict a single outcome. That's definitely a useful way to predict the future, but what if the one model we built isn't the *right* one? If we could somehow use more than one model simultaneously, we'd have a more trustworthy prediction.\n",
+    "\n",
+    "**Ensemble models** work by building multiple models on random subsets of the same data, and then comparing their predictions to make a final prediction. Since we used a decision tree in the last lesson, we're going to create an ensemble of trees here. This type of model is called a **random forest**.\n",
+    "\n",
+    "We'll start by creating a pipeline to streamline our workflow."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0f46d66f-4342-49af-b4d1-24ced1b80c3f",
+   "id": "81530a24-952a-4c78-9d59-231529b6b3ea",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694058110\", h=\"dc751751bf\", width=600)"
+    "VimeoVideo(\"694695643\", h=\"32c3d5b1ed\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "892cf7eb-cc7d-4aec-9903-06ddd45e3638",
+   "id": "6229c9b5-f739-4a12-a12b-b227eb26674d",
    "metadata": {},
    "source": [
-    "**Task 5.2.15:** Create three identical models: `model_reg`, `model_under` and `model_over`. All of them should use a `SimpleImputer` followed by a `DecisionTreeClassifier`. Train `model_reg` using the unaltered training data. For `model_under`, use the undersampled data. For `model_over`, use the oversampled data.\n",
+    "**Task 5.3.6:** Create a pipeline named `clf` (short for \"classifier\") that contains a `SimpleImputer` transformer and a `RandomForestClassifier` predictor.\n",
+    "Keep the `random_state = 42` for `RandomForestClassifier` predictor.\n",
     "\n",
-    "- [What's a <span id='term'>decision tree</span>?](../%40textbook/14-ml-classification.ipynb#Decision-Trees)\n",
-    "- [What's imputation?](../%40textbook/12-ml-core.ipynb#Imputation) \n",
-    "- [<span id='technique'>Create a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Creating-a-Pipeline-in-scikit-learn)\n",
-    "- [<span id='technique'>Fit a model to training data in <span id='tool'>scikit-learn</span></span>.](../%40textbook/15-ml-regression.ipynb#Fitting-a-Model-to-Training-Data)"
+    "- [What's an ensemble model?](../%40textbook/14-ml-classification.ipynb#Classification-with-Ensemble-Models)\n",
+    "- [What's a random forest model?](../%40textbook/14-ml-classification.ipynb#Random-Forest)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "4ff60fd6-184c-4c3c-88e2-11589d212859",
+   "id": "23d29542-cf2c-4e17-b43d-7d42a0a3a5d4",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Fit on `X_train`, `y_train`\n",
-    "\n",
-    "model_reg = ...\n",
-    "model_reg.fit(..., ...)  \n",
-    "\n",
-    "# Fit on `X_train_under`, `y_train_under`\n",
-    "\n",
-    "model_under = ...\n",
-    "model_under.fit(..., ...) \n",
-    "\n",
-    "# Fit on `X_train_over`, `y_train_over`\n",
-    "\n",
-    "model_over = ...\n",
-    "model_over.fit(..., ...)  "
+    "clf = ...\n",
+    "print(clf)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "596ba5e3-c366-44ef-ac73-9f853fb0bbd2",
+   "id": "376b73a6-18a0-4ad7-b501-fb08f08d8254",
+   "metadata": {},
+   "source": [
+    "By default, the number of trees in our forest (`n_estimators`) is set to 100. That means when we train this classifier, we'll be fitting 100 trees. While it will take longer to train, it will hopefully lead to better performance.\n",
+    "\n",
+    "In order to get the best performance from our model, we need to tune its hyperparameter. But how can we do this if we haven't created a validation set? The answer is **cross-validation**. So, before we look at hyperparameters, let's see how cross-validation works with the classifier we just built."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "da86d743-198d-4890-8733-e0919168a87e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694695619\", h=\"2c41dca371\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ae4c6c98-5db2-4347-aa5b-020730a56bd6",
+   "metadata": {},
+   "source": [
+    "**Task 5.3.7:** Perform cross-validation with your classifier, using the over-sampled training data. We want five folds, so set `cv` to 5. We also want to speed up training, to set `n_jobs` to -1.\n",
+    "\n",
+    "- [What's cross-validation?](../%40textbook/14-ml-classification.ipynb#Cross-Validation)\n",
+    "- [Perform k-fold cross-validation on a model in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Cross-Validation)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2c1a44f4-b2d2-4d5e-b426-d63bba2166a5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cv_acc_scores = ...\n",
+    "print(cv_acc_scores)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "45c5be54-bd14-4b07-8d9b-abbe4d984e2d",
+   "metadata": {},
+   "source": [
+    "That took kind of a long time, but we just trained 500 random forest classifiers (100 jobs x 5 folds). No wonder it takes so long!\n",
+    "\n",
+    "Pro tip: even though `cross_val_score` is useful for getting an idea of how cross-validation works, you'll rarely use it. Instead, most people include a `cv` argument when they do a hyperparameter search. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "40e6180f-51e4-42ad-9753-d2c39a73e7c8",
+   "metadata": {},
+   "source": [
+    "Now that we have an idea of how cross-validation works, let's tune our model. The first step is creating a range of hyperparameters that we want to evaluate. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "34d4abf2-dd15-4b65-acde-cee1c3b4a3e5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694695593\", h=\"5143f0b63f\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4d7c6240-88cd-4a9a-b384-ad049861eff3",
+   "metadata": {},
+   "source": [
+    "**Task 5.3.8:** Create a dictionary with the range of hyperparameters that we want to evaluate for our classifier. \n",
+    "\n",
+    "1. For the `SimpleImputer`, try both the `\"mean\"` and `\"median\"` strategies. \n",
+    "2. For the `RandomForestClassifier`, try `max_depth` settings between 10 and 50, by steps of 10. \n",
+    "3. Also for the `RandomForestClassifier`, try `n_estimators` settings between 25 and 100 by steps of 25.\n",
+    "\n",
+    "- [What's a dictionary?](../%40textbook/01-python-getting-started.ipynb#Python-Dictionaries)\n",
+    "- [What's a hyperparameter?](../%40textbook/17-ts-core.ipynb#Hyperparameters)\n",
+    "- [Create a range in Python](../%40textbook/18-ts-models.ipynb#Hyperparameters)\n",
+    "- [Define a hyperparameter grid for model tuning in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Hyperparameter-Tuning)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f5330f53-2ddf-4261-a17e-3ba7afc3faea",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "params = ...\n",
+    "params"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "77360385-ab0f-4d0e-b3ca-3e4faace353c",
+   "metadata": {},
+   "source": [
+    "Now that we have our hyperparameter grid, let's incorporate it into a **grid search**."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "93206456-d95b-4d13-8995-ff3acdfe323b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694695574\", h=\"8588bf015f\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2c25ceef-6e09-4453-b638-dfc0b691a1c6",
+   "metadata": {},
+   "source": [
+    "**Task 5.3.9:** Create a `GridSearchCV` named `model` that includes your classifier and hyperparameter grid. Be sure to use the same arguments for `cv` and `n_jobs` that you used above, and set `verbose` to 1. \n",
+    "\n",
+    "- [What's cross-validation?](../%40textbook/14-ml-classification.ipynb#Cross-Validation)\n",
+    "- [What's a grid search?](../%40textbook/14-ml-classification.ipynb#Grid-Search)\n",
+    "- [Perform a hyperparameter grid search in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Grid-Search)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4ee09ca3-07af-4543-828e-46d38a8a05d1",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "model = ...\n",
+    "model"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "34093b4b-1c94-4c94-99a5-32c48f641322",
+   "metadata": {},
+   "source": [
+    "Finally, now let's fit the model."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e26e1038-e227-435b-945d-e5c1498f2d82",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694695566\", h=\"f4e9910a9e\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0c701d28-dad6-4133-9438-70e554761c35",
+   "metadata": {},
+   "source": [
+    "**Task 5.3.10:** Fit `model` to the over-sampled training data."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c8367806-ae6b-46cb-9a16-bffd1a4a070c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Train model\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4faafd99-fd3a-49d5-b002-0d88170aecc6",
+   "metadata": {},
+   "source": [
+    "This will take some time to train, so let's take a moment to think about why. How many forests did we just test? 4 different `max_depth`s times 3 `n_estimator`s times 2 imputation strategies... that makes 24 forests. How many fits did we just do? 24 forests times 5 folds is 120. And remember that each forest is comprised of 25-75 trees, which works out to *at least* 3,000 trees. So it's computationally expensive! \n",
+    "\n",
+    "Okay, now that we've tested all those models, let's take a look at the results."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "121ea0ba-8bce-452d-ba85-c42e2b294490",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694695546\", h=\"4ae60129c4\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9cb4b8fb-3422-486e-9c00-bb24a685ad3c",
+   "metadata": {},
+   "source": [
+    "**Task 5.3.11:** Extract the cross-validation results from `model` and load them into a DataFrame named `cv_results`.\n",
+    "\n",
+    "- [Get cross-validation results from a hyperparameter search in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Grid-Search)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "0b2bd176-3c3e-425c-bbbc-6915cb5b9944",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cv_results = ...\n",
+    "cv_results.head(10)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ce855361-5586-476e-8701-dcafa941947d",
+   "metadata": {},
+   "source": [
+    "In addition to the accuracy scores for all the different models we tried during our grid search, we can see how long it took each model to train. Let's take a closer look at how different hyperparameter settings affect training time. \n",
+    "\n",
+    "First, we'll look at `n_estimators`. Our grid search evaluated this hyperparameter for various `max_depth` settings, but let's only look at models where `max_depth` equals 10."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "ad9ea59f-4479-47c9-bd88-5ac324150a8a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694695537\", h=\"e460435664\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0c189c09-8a8c-474d-8f26-ea4175fde382",
+   "metadata": {},
+   "source": [
+    "**Task 5.3.12:** Create a mask for `cv_results` for rows where `\"param_randomforestclassifier__max_depth\"` equals 10. Then plot `\"param_randomforestclassifier__n_estimators\"` on the x-axis and `\"mean_fit_time\"` on the y-axis. Don't forget to label your axes and include a title. \n",
+    "\n",
+    "- [Subset a DataFrame with a mask using pandas.](../%40textbook/04-pandas-advanced.ipynb)\n",
+    "- [Create a line plot in Matplotlib.](../%40textbook/06-visualization-matplotlib.ipynb)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a34c23f8-79aa-41e3-b140-39df4a61c7e7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create mask\n",
+    "mask = ...\n",
+    "# Plot fit time vs n_estimators\n",
+    "\n",
+    "# Label axes\n",
+    "plt.xlabel(\"Number of Estimators\")\n",
+    "plt.ylabel(\"Mean Fit Time [seconds]\")\n",
+    "plt.title(\"Training Time vs Estimators (max_depth=10)\");"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9e6bf12e-b7c0-4e67-9181-f74e18a199f0",
+   "metadata": {},
+   "source": [
+    "Next, we'll look at `max_depth`. Here, we'll also limit our data to rows where `n_estimators` equals 25."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f87c4c61-d6b8-476c-86bd-5404b63b8372",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694695525\", h=\"99f2dfc9eb\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6aec1af3-6701-452c-a149-fa67904fec79",
+   "metadata": {},
+   "source": [
+    "**Task 5.3.13:** Create a mask for `cv_results` for rows where `\"param_randomforestclassifier__n_estimators\"` equals 25. Then plot `\"param_randomforestclassifier__max_depth\"` on the x-axis and `\"mean_fit_time\"` on the y-axis. Don't forget to label your axes and include a title. \n",
+    "\n",
+    "- [Subset a DataFrame with a mask using pandas.](../%40textbook/04-pandas-advanced.ipynb)\n",
+    "- [Create a line plot in Matplotlib.](../%40textbook/06-visualization-matplotlib.ipynb)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c68f27d4-ca7a-4572-b29f-98e884802d56",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create mask\n",
+    "\n",
+    "mask = ...\n",
+    "# Plot fit time vs max_depth\n",
+    "\n",
+    "\n",
+    "# Label axes\n",
+    "plt.xlabel(\"Max Depth\")\n",
+    "plt.ylabel(\"Mean Fit Time [seconds]\")\n",
+    "plt.title(\"Training Time vs Max Depth (n_estimators=25)\");"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "fea4fdf4-0b13-4b5f-8287-f10445ccc3a6",
+   "metadata": {},
+   "source": [
+    "There's a general upwards trend, but we see a lot of up-and-down here. That's because for each max depth, grid search tries two different imputation strategies: mean and median. Median is a lot faster to calculate, so that speeds up training time. \n",
+    "\n",
+    "Finally, let's look at the hyperparameters that led to the best performance. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b9681033-537f-4438-b67a-0290419a4dad",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694695505\", h=\"f98f660ce1\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "dcfe1215-0bd9-42b7-ba5f-081b6cc05dcb",
+   "metadata": {},
+   "source": [
+    "**Task 5.3.14:** Extract the best hyperparameters from `model`.\n",
+    "\n",
+    "- [Get settings from a hyperparameter search in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Cross-Validation)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "282a14d4-dddf-4042-b18e-229b46ce5e1b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Extract best hyperparameters\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "acf32ded-07fb-4452-a439-ac94055ba3b0",
+   "metadata": {},
+   "source": [
+    "Note that we don't need to build and train a new model with these settings. Now that the grid search is complete, when we use `model.predict()`, it will serve up predictions using the best model — something that we'll do at the end of this lesson."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "3aaaaa92-edfe-4e33-b7e8-aa3f076ed00a",
    "metadata": {},
    "source": [
     "## Evaluate"
@@ -815,92 +704,78 @@
   },
   {
    "cell_type": "markdown",
-   "id": "a03c9432-c519-4d27-a517-d3805771a482",
+   "id": "087b3534-2488-4b78-bdd0-dfd441b558f9",
    "metadata": {},
    "source": [
-    "How did we do?"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "dc37b9e4-be81-4edb-9ccc-18bfae4e85d9",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694058076\", h=\"d57fb27d07\", width=600)"
+    "All right: The moment of truth. Let's see how our model performs."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "3b127381-5f48-4ba9-88a6-80191e24e374",
+   "id": "a805626d-6ad2-456b-86cc-3cc2c0b4f756",
    "metadata": {},
    "source": [
-    "**Task 5.2.16:** Calculate training and test accuracy for your three models. \n",
+    "**Task 5.3.15:** Calculate the training and test accuracy scores for `model`. \n",
     "\n",
-    "- [What's an accuracy score?](../%40textbook/14-ml-classification.ipynb#Evaluation)\n",
-    "- [Calculate the accuracy score for a model in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Evaluation)"
+    "- [<span id='technique'>Calculate the accuracy score for a model in <span id='term'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c0ca1a2b-e958-4520-8665-d40f22f07390",
+   "id": "c20b2755-83b4-4b06-a5a0-ba73ff92e108",
    "metadata": {},
    "outputs": [],
    "source": [
-    "for m in [model_reg, model_under, model_over]:\n",
-    "    acc_train = ...\n",
-    "    acc_test = ...\n",
+    "acc_train = ...\n",
+    "acc_test = ...\n",
     "\n",
-    "    print(\"Training Accuracy:\", round(acc_train, 4))\n",
-    "    print(\"Test Accuracy:\", round(acc_test, 4))"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "e391146f-5417-4abe-9160-1e1cd9ec9ccd",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "acc_train"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "34ef5aac-2210-460c-bb4c-1dcf8843be99",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "acc_test"
+    "print(\"Training Accuracy:\", round(acc_train, 4))\n",
+    "print(\"Test Accuracy:\", round(acc_test, 4))"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "8f554cac-2023-4940-ace4-03ff0d80b4b8",
+   "id": "c36a4347-0dfa-431e-8a02-de12eacde35b",
    "metadata": {},
    "source": [
-    "As we mentioned earlier, \"good\" accuracy scores don't tell us much about the model's performance when dealing with imbalanced data. So instead of looking at what the model got right or wrong, let's see how its predictions differ for the two classes in the dataset."
+    "We beat the baseline! Just barely, but we beat it. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "36e54aae-4580-483d-bbb5-d8b70dd25572",
+   "metadata": {},
+   "source": [
+    "Next, we're going to use a confusion matrix to see how our model performs. To better understand the values we'll see in the matrix, let's first count how many observations in our test set belong to the positive and negative classes. "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c1fbb0b3-0552-4a8a-8096-da9844cff6e3",
+   "id": "dfa2b41c-02a0-4a36-8a99-9e515b211d3f",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694058022\", h=\"ce29f57dee\", width=600)"
+    "y_test.value_counts()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "19597e4f-1db4-4e5f-a273-df994676ae5d",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694695486\", h=\"1d6ac2bf77\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "2a281947-e846-4173-81c2-40dbbc944bf0",
+   "id": "8552562a-c27a-462f-b99b-637c2e7d2da7",
    "metadata": {},
    "source": [
-    "**Task 5.2.17:** Plot a confusion matrix that shows how your best model performs on your validation set. \n",
+    "**Task 5.3.16:** Plot a confusion matrix that shows how your best model performs on your test set. \n",
     "\n",
     "- [What's a confusion matrix?](../%40textbook/14-ml-classification.ipynb#Confusion-Matrix)\n",
     "- [Create a confusion matrix using scikit-learn.](../%40textbook/14-ml-classification.ipynb#Confusion-Matrix) "
@@ -909,7 +784,7 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f47c811c-58bb-433f-8af5-742b2188fddf",
+   "id": "5d5cb2c9-d296-4363-b26c-240cc71f51a3",
    "metadata": {},
    "outputs": [],
    "source": [
@@ -918,131 +793,83 @@
   },
   {
    "cell_type": "markdown",
-   "id": "4d23026f-9d8d-4e0d-a93c-9f8599af6d27",
+   "id": "967aca43-c5a3-47fd-b814-54c905897c0f",
    "metadata": {},
    "source": [
-    "In this lesson, we didn't do any hyperparameter tuning, but it will be helpful in the next lesson to know what the depth of the tree `model_over`."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6c483996-2a99-4197-a850-42f9308c7c54",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694057996\", h=\"73882663cf\", width=600)"
+    "Notice the relationship between the numbers in this matrix with the count you did the previous task. If you sum the values in the bottom row, you get the total number of positive observations in `y_test` ($72 + 11 = 83$). And the top row sum to the number of negative observations ($1903 + 10 = 1913$)."
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "f982fbc2-2802-4e26-9ac4-0477b2511db8",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.18:** Determine the depth of the decision tree in `model_over`.\n",
-    "\n",
-    "- [What's a decision tree?](../%40textbook/14-ml-classification.ipynb#Decision-Trees)\n",
-    "- [Access an object in a pipeline in scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "408b3f41-3444-4515-83d3-0c5fd36483b3",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "depth = ...\n",
-    "print(depth)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "b0131cd6-b7e6-4ff1-afb1-6913f2dc1a60",
+   "id": "faac53ee-1a0e-423b-b68e-e85cce11bfc9",
    "metadata": {},
    "source": [
     "# Communicate"
    ]
   },
   {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "dcc8a047-c831-4f31-bc75-8d8b785e8bf4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"698358615\", h=\"3fd4b2186a\", width=600)"
+   ]
+  },
+  {
    "cell_type": "markdown",
-   "id": "df2beac9-6df5-4c38-9dfc-3992c50affdf",
+   "id": "e867677d-1700-499d-8a92-c1d620510d1d",
    "metadata": {},
    "source": [
-    "Now that we have a reasonable model, let's graph the importance of each feature."
+    "**Task 5.3.17:** Create a horizontal bar chart with the 10 most important features for your model. "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "529b15f9-1169-41df-870f-282cb472596e",
+   "id": "6a803d93-9b7c-4529-999b-326144b17fbd",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694057962\", h=\"f60aa3b614\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "60b7a603-a3f4-4c95-a514-8c61d9feb2bf",
-   "metadata": {},
-   "source": [
-    "**Task 5.2.19:** Create a horizontal bar chart with the 15 most important features for `model_over`. Be sure to label your x-axis `\"Gini Importance\"`.\n",
-    "\n",
-    "- [What's a <span id='term'>bar chart</span>?](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)\n",
-    "- [<span id='technique'>Access an object in a pipeline in <span id='tool'>scikit-learn</span></span>.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)\n",
-    "- [<span id='technique'>Create a bar chart using <span id='tool'>pandas</span></span>.](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)\n",
-    "- [<span id='technique'>Create a Series in <span id='tool'>pandas</span></span>.](../%40textbook/03-pandas-getting-started.ipynb#Adding-Columns)<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "8275986a-74d1-44d0-80c9-d1cab4183da6",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Get importances\n",
-    "\n",
+    "# Get feature names from training data\n",
+    "features = ...\n",
+    "# Extract importances from model\n",
     "importances = ...\n",
-    "\n",
-    "# Put importances into a Series\n",
+    "# Create a series with feature names and importances\n",
     "feat_imp = ...\n",
-    "# Plot series\n",
-    "\n",
+    "# Plot 10 most important features\n",
     "\n",
     "\n",
     "plt.xlabel(\"Gini Importance\")\n",
     "plt.ylabel(\"Feature\")\n",
-    "plt.title(\"model_over Feature Importance\");"
+    "plt.title(\"Feature Importance\");"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "abc81c45-5048-471f-a8cd-37749bd0052e",
+   "id": "5b0471e4-ac32-4b45-85ba-d7169757293e",
    "metadata": {},
    "source": [
-    "There's our old friend `\"feat_27\"` near the top, along with features 34 and 26. It's time to share our findings.\n",
-    "\n",
-    "Sometimes communication means sharing a visualization. Other times, it means sharing the actual model you've made so that colleagues can use it on new data or deploy your model into production. First step towards production: saving your model."
+    "The only thing left now is to save your model so that it can be reused."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "55ca1eb8-dec7-43d6-94cd-680035d111d5",
+   "id": "41330d0b-96b1-4985-bcd8-e75635e2719e",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694057923\", h=\"85a50bb588\", width=600)"
+    "VimeoVideo(\"694695478\", h=\"a13bdacb55\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "2dfbb91b-9608-49a7-af74-da68695e9341",
+   "id": "7cf82a6b-81b7-402e-97e0-247b48e2af27",
    "metadata": {},
    "source": [
-    "**Task 5.2.20:** Using a context manager, save your best-performing model to a a file named `\"model-5-2.pkl\"`. \n",
+    "**Task 5.3.18:** Using a context manager, save your best-performing model to a a file named `\"model-5-3.pkl\"`. \n",
     "\n",
     "- [What's serialization?](../%40textbook/03-pandas-getting-started.ipynb#Pickle-Files)\n",
     "- [Store a Python object as a serialized file using pickle.](../%40textbook/03-pandas-getting-started.ipynb#Pickle-Files) "
@@ -1051,48 +878,92 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "4b4409a0-249f-4a70-b356-2fdd83d501f9",
+   "id": "3038e7b4-e125-4315-8764-4259907bd362",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Save your model as `\"model-5-2.pkl\"`\n"
+    "# Save model\n"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "966dbb0d-29fd-45c1-af6d-102d5e0826f8",
+   "id": "a633e34a-8827-4d7f-b3d0-7155363b0837",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694057859\", h=\"fecd8f9e54\", width=600)"
+    "VimeoVideo(\"694695451\", h=\"fc96dd8d1f\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "1185a161-dc20-47a6-a8bc-0195793b746b",
+   "id": "8b6f4286-8f3f-449f-bf52-39d3fe02eefb",
    "metadata": {},
    "source": [
-    "**Task 5.2.21:** Make sure you've saved your model correctly by loading `\"model-5-2.pkl\"` and assigning to the variable `loaded_model`. Once you're satisfied with the result, run the last cell to submit your model to the grader. \n",
+    "**Task 5.3.19:** Create a function `make_predictions`. It should take two arguments: the path of a JSON file that contains test data and the path of a serialized model. The function should load and clean the data using the `wrangle` function you created, load the model, generate an array of predictions, and convert that array into a Series. (The Series should have the name `\"bankrupt\"` and the same index labels as the test data.) Finally, the function should return its predictions as a Series. \n",
     "\n",
-    "- [Load a Python object from a serialized file using pickle.](../%40textbook/03-pandas-getting-started.ipynb#Pickle-Files)"
+    "- [What's a function?](../%40textbook/02-python-advanced.ipynb#Functions)\n",
+    "- [Load a serialized file](../%40textbook/03-pandas-getting-started.ipynb#Pickle-Files)\n",
+    "- [What's a Series?](../%40textbook/05-pandas-summary-statistics.ipynb#Series)\n",
+    "- [Create a Series in pandas](../%40textbook/03-pandas-getting-started.ipynb#Working-with-Columns)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "7b8b2502-6b8e-442f-9a4b-f9aa14563954",
+   "id": "1ca88012-3462-429c-a5f4-d7cf9af9c54c",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Load `\"model-5-2.pkl\"`\n",
-    "\n",
-    "print(loaded_model)"
+    "def make_predictions(data_filepath, model_filepath):\n",
+    "    # Wrangle JSON file\n",
+    "    X_test = ...\n",
+    "    # Load model\n",
+    "    \n",
+    "    # Generate predictions\n",
+    "    y_test_pred = ...\n",
+    "    # Put predictions into Series with name \"bankrupt\", and same index as X_test\n",
+    "    y_test_pred = ...\n",
+    "    return y_test_pred"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "662a4e31-0f61-4b3a-be66-ddbf69cfd622",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"694695426\", h=\"f75588d43a\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "be65eed4",
+   "id": "456ba113-e075-427c-8f3a-ffb9b6975c7b",
+   "metadata": {},
+   "source": [
+    "**Task 5.3.20:** Use the code below to check your `make_predictions` function. Once you're satisfied with the result, click on the check the activity button on the left side of the panel."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c668b57d-93e0-4f64-857e-60b4e0b07b67",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "y_test_pred = make_predictions(\n",
+    "    data_filepath=\"data/poland-bankruptcy-data-2009-mvp-features.json.gz\",\n",
+    "    model_filepath=\"model-5-3.pkl\",\n",
+    ")\n",
+    "\n",
+    "print(\"predictions shape:\", y_test_pred.shape)\n",
+    "y_test_pred.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4a4e70bf",
    "metadata": {
     "deletable": false,
     "editable": false
