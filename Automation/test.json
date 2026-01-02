@@ -2,63 +2,55 @@
  "cells": [
   {
    "cell_type": "markdown",
-   "id": "7d1f126f-bd15-4c83-b5a2-b255823aecf1",
-   "metadata": {
-    "editable": true,
-    "slideshow": {
-     "slide_type": ""
-    },
-    "tags": []
-   },
+   "id": "241ff9ce-bd6c-4949-9206-e98982e9bbaf",
+   "metadata": {},
    "source": [
-    "<font size=\"+3\"><strong>5.3. Ensemble Models: Random Forest</strong></font>"
+    "<font size=\"+3\"><strong>6.2. Clustering with Two Features</strong></font>"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "376a47c5-c097-412a-9ee7-a65b7ed7b8e8",
+   "id": "6bfd1e6b-45c6-48ca-9199-8b43183cf166",
    "metadata": {},
    "source": [
-    "So far in this project, we've learned how to retrieve and decompress data, and how to manage imbalanced data to build a decision-tree model.\n",
-    "\n",
-    "In this lesson, we're going to expand our decision tree model into an entire forest (an example of something called an **ensemble model**); learn how to use a **grid search** to tune hyperparameters; and create a function that loads data and a pre-trained model, and uses that model to generate a Series of predictions."
+    "In the previous lesson, you explored data from the [Survey of Consumer Finances](https://www.federalreserve.gov/econres/scfindex.htm) (SCF), paying special attention to households that have been turned down for credit or feared being denied credit. In this lesson, we'll build a model to segment those households into distinct clusters, and examine the differences between those clusters. "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "8e4a0490-5a15-456a-9925-804c62ec1c7b",
+   "id": "e248e25b-7db5-4cab-aaef-116e80a86f2a",
    "metadata": {},
    "outputs": [],
    "source": [
-    "import gzip\n",
-    "import json\n",
-    "import pickle \n",
-    "\n",
     "import matplotlib.pyplot as plt\n",
     "import pandas as pd\n",
-    "from imblearn.over_sampling import RandomOverSampler\n",
+    "import seaborn as sns\n",
+    "import pickle\n",
     "from IPython.display import VimeoVideo\n",
-    "from sklearn.ensemble import RandomForestClassifier\n",
-    "from sklearn.impute import SimpleImputer\n",
-    "from sklearn.metrics import ConfusionMatrixDisplay\n",
-    "from sklearn.model_selection import GridSearchCV, cross_val_score, train_test_split\n",
-    "from sklearn.pipeline import make_pipeline"
+    "from sklearn.cluster import KMeans\n",
+    "from sklearn.metrics import silhouette_score\n",
+    "from sklearn.utils.validation import check_is_fitted\n",
+    "from teaching_tools.widgets import ClusterWidget, SCFClusterWidget\n",
+    "import warnings\n",
+    "\n",
+    "warnings.simplefilter(action=\"ignore\", category=FutureWarning)\n",
+    "warnings.filterwarnings(\"ignore\", category=DeprecationWarning)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "cc28305a-cf2f-4af9-9d90-cf0facc9ead6",
+   "id": "6f36ffe5-2622-4335-b6b4-7b40f472a3b4",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694695674\", h=\"538b4d2725\", width=600)"
+    "VimeoVideo(\"713919442\", h=\"7b4cbc1495\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "fd9c02a5-b79a-41d6-8371-1ca5948979d8",
+   "id": "2e118d14-d5d1-4b76-9cf2-d05f4aaf37f1",
    "metadata": {},
    "source": [
     "# Prepare Data"
@@ -66,56 +58,134 @@
   },
   {
    "cell_type": "markdown",
-   "id": "794a1a5c-5927-46ae-b5f7-786f932bceba",
+   "id": "527236cc-02b7-4815-b788-820064f3bb91",
    "metadata": {},
    "source": [
-    "As always, we'll begin by importing the dataset."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "7fc1f61c-c49b-4c96-a173-0c4f45430562",
-   "metadata": {},
-   "source": [
-    "## Import"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "22d9d776-4ab6-4cef-8f2a-ec58505bdf70",
-   "metadata": {},
-   "source": [
-    "**Task 5.3.1:** Complete the `wrangle` function below using the code you developed in the  lesson 5.1. Then use it to import `poland-bankruptcy-data-2009.json.gz` into the DataFrame `df`.\n",
+    "## Import\n",
     "\n",
-    "- [<span id='technique'>Write a function in <span id='tool'>Python</span></span>.](../%40textbook/02-python-advanced.ipynb#Functions)<span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
+    "Just like always, we need to begin by bringing our data into the project. We spent some time in the previous lesson working with a subset of the larger SCF dataset called `\"TURNFEAR\"`. Let's start with that."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f16a82a1-260d-410b-9c72-97e23e0e302c",
+   "id": "3920fa43-88e3-4bbe-9c5f-880a24792810",
    "metadata": {},
    "outputs": [],
    "source": [
-    "def wrangle(filename):\n",
+    "VimeoVideo(\"713919411\", h=\"fd4fae4013\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9324beb9-82dd-44ab-855e-fc0921115ca5",
+   "metadata": {},
+   "source": [
+    "**Task 6.2.1:** Create a `wrangle` function that takes a path of a CSV file as input, reads the file into a DataFrame, subsets the data to households that have been turned down for credit or feared being denied credit in the past 5 years (see `\"TURNFEAR\"`), and returns the subset DataFrame. \n",
+    "\n",
+    "- [<span id='technique'>Write a function in <span id='tool'>Python</span></span>.](../%40textbook/02-python-advanced.ipynb#Functions)\n",
+    "- [Subset a DataFrame by selecting one or more columns in pandas.](../%40textbook/04-pandas-advanced.ipynb#Subsetting-with-Masks)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3fc9712c-73c5-4432-914c-047050251aaf",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def wrangle(filepath):\n",
     "    return df"
    ]
   },
   {
+   "cell_type": "markdown",
+   "id": "f855b24b-b119-4750-be90-c06afef92e6b",
+   "metadata": {},
+   "source": [
+    "And now that we've got that taken care of, we'll import the data and see what we've got.\n",
+    "\n",
+    "**Task 6.2.2:** Use your `wrangle` function to read the file `SCFP2019.csv.gz` into a DataFrame named `df`.\n",
+    "\n",
+    "- [Read a CSV file into a DataFrame using pandas.](../%40textbook/03-pandas-getting-started.ipynb#Working-with-DataFrames)"
+   ]
+  },
+  {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c98d5162-f01f-47a2-a538-dc98e9e896d3",
+   "id": "aa8e58d2-ddbd-4a50-b2aa-8ece0952748c",
    "metadata": {},
    "outputs": [],
    "source": [
     "df = ...\n",
-    "print(df.shape)\n",
+    "\n",
+    "print(\"df type:\", type(df))\n",
+    "print(\"df shape:\", df.shape)\n",
     "df.head()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "cafccb53-dc9f-4eaa-98c8-42357ba86eb0",
+   "id": "8a3dfb8f-b266-47b1-86bc-ecd99bdc2340",
+   "metadata": {},
+   "source": [
+    "## Explore"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "2859157c-0fa2-46cc-bd2b-8284ba76cf85",
+   "metadata": {},
+   "source": [
+    "We looked at a lot of different features of the `\"TURNFEAR\"` subset in the last lesson, and the last thing we looked at was the relationship between real estate and debt. To refresh our memory on what that relationship looked like, let's make that graph again."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "090fe9f0-a8ce-4c94-802d-2acb73672af9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"713919351\", h=\"55dc979d55\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "34e581ac-e038-41e5-84c5-82b2ca074c6d",
+   "metadata": {},
+   "source": [
+    "**Task 6.2.3:** Create a scatter plot of that shows the total value of primary residence of a household (`\"HOUSES\"`) as a function of the total value of household debt (`\"DEBT\"`). Be sure to label your x-axis as `\"Household Debt\"`, your y-axis as `\"Home Value\"`, and use the title `\"Credit Fearful: Home Value vs. Household Debt\"`.\n",
+    "\n",
+    "- [What's a scatter plot?](../%40textbook/06-visualization-matplotlib.ipynb#Scatter-Plots)\n",
+    "- [Create a scatter plot using seaborn.](../%40textbook/09-visualization-seaborn.ipynb#Scatter-Plots)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b63fc323-9eda-434b-91f7-1b44b06264ec",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot \"HOUSES\" vs \"DEBT\"\n",
+    "\n",
+    "plt.xlabel(\"Household Debt [$1M]\")\n",
+    "plt.ylabel(\"Home Value [$1M]\")\n",
+    "plt.title(\"Credit Fearful: Home Value vs. Household Debt\");"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "99c7c89f-3c23-430d-89bc-6c84fbeda093",
+   "metadata": {},
+   "source": [
+    "Remember that graph and its clusters? Let's get a little deeper into it."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b8c6e172-247c-41eb-938c-e6ea962078ec",
    "metadata": {
     "tags": []
    },
@@ -125,119 +195,52 @@
   },
   {
    "cell_type": "markdown",
-   "id": "b2ecbffd-7743-4102-8b84-bfbbdf98f601",
+   "id": "cd1aea0d-66e2-4172-ab54-522e5bdc6d7e",
    "metadata": {},
    "source": [
-    "**Task 5.3.2:** Create your feature matrix `X` and target vector `y`. Your target is `\"bankrupt\"`. \n",
+    "We need to split our data, but we're not going to need target vector or a test set this time around. That's because the model we'll be building involves *unsupervised* learning. It's called *unsupervised* because the model doesn't try to map input to a st of labels or targets that already exist. It's kind of like how humans learn new skills, in that we don't always have models to copy. Sometimes, we just try out something and see what happens. Keep in mind that this doesn't make these models any less useful, it just makes them different.\n",
     "\n",
-    "- [What's a <span id='term'>feature matrix</span>?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
-    "- [What's a <span id='term'>target vector</span>?](../%40textbook/15-ml-regression.ipynb#Linear-Regression)\n",
-    "- [<span id='technique'>Subset a DataFrame by selecting one or more columns in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns) \n",
-    "- [<span id='technique'>Select a Series from a DataFrame in <span id='tool'>pandas</span></span>.](../%40textbook/04-pandas-advanced.ipynb#Combine-multiple-categories-in-a-Series) "
+    "So, keeping that in mind, let's do the split."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f1093cff-131c-496f-8f00-13d837774083",
+   "id": "9d7c9ad8-ebd8-4a47-9a85-9ef44f3fed94",
    "metadata": {},
    "outputs": [],
    "source": [
-    "target = \"bankrupt\"\n",
+    "VimeoVideo(\"713919336\", h=\"775867f48a\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "0d03be09-da3e-4e08-af5b-0cdbb55ab9b8",
+   "metadata": {},
+   "source": [
+    "**Task 6.2.4:** Create the feature matrix `X`. It should contain two features only: `\"DEBT\"` and `\"HOUSES\"`.\n",
+    "\n",
+    "- [What's a feature matrix?](../%40textbook/14-ml-classification.ipynb#Randomized-Train-Test-split)\n",
+    "- [Subset a DataFrame by selecting one or more columns in pandas.](../%40textbook/04-pandas-advanced.ipynb#Subset-a-DataFrame-by-Selecting-One-or-More-Columns) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "1eef1531-d919-4a85-8eaa-148750c2d5c0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
     "X = ...\n",
-    "y = ...\n",
     "\n",
+    "print(\"X type:\", type(X))\n",
     "print(\"X shape:\", X.shape)\n",
-    "print(\"y shape:\", y.shape)"
+    "X.head()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "376f7aa4-1146-4b7f-932b-1834f953fe49",
-   "metadata": {},
-   "source": [
-    "Since we're not working with time series data, we're going to randomly divide our dataset into training and test sets — just like we did in project 4."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "bba7ebc0-5785-4e19-803b-3ab0a28c76ea",
-   "metadata": {},
-   "source": [
-    "**Task 5.3.3:** Divide your data (`X` and `y`) into training and test sets using a randomized train-test split. Your test set should be 20% of your total data. And don't forget to set a `random_state` for reproducibility. \n",
-    "\n",
-    "- [<span id='technique'>Perform a randomized train-test split using <span id='tool'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Randomized-Train-Test-split)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "37be42f8-bf07-4e7d-921a-e6fe7f9e861f",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "X_train, X_test, y_train, y_test = ...\n",
-    "\n",
-    "\n",
-    "print(\"X_train shape:\", X_train.shape)\n",
-    "print(\"y_train shape:\", y_train.shape)\n",
-    "print(\"X_test shape:\", X_test.shape)\n",
-    "print(\"y_test shape:\", y_test.shape)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "083eb52a-35ee-424b-9594-8427651fc37f",
-   "metadata": {},
-   "source": [
-    "You might have noticed that we didn't create a validation set, even though we're planning on tuning our model's hyperparameters in this lesson. That's because we're going to use cross-validation, which we'll talk about more later on."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "9df75fb0-0c88-40ad-84df-685325039dd7",
-   "metadata": {},
-   "source": [
-    "## Resample"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "9f5308b5-95d3-49b8-9845-392cc438b386",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694695662\", h=\"dc60d76861\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "ecb07cec-9400-4619-813b-92e34eb651ba",
-   "metadata": {},
-   "source": [
-    "**Task 5.3.4:** Create a new feature matrix `X_train_over` and target vector `y_train_over` by performing random over-sampling on the training data.\n",
-    "\n",
-    "- [What is over-sampling?](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Over-sampling)\n",
-    "- [Perform random over-sampling using imbalanced-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Over-sampling)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "5594111e-ab15-43b9-a8dd-0b68ed1ccb20",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "over_sampler = ...\n",
-    "X_train_over, y_train_over = ...\n",
-    "print(\"X_train_over shape:\", X_train_over.shape)\n",
-    "X_train_over.head()"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "08127742-3d7c-4f3a-95d8-a1af6d2ba88d",
+   "id": "cd9ae9a4-a490-4a15-b300-4b3b5c8109a5",
    "metadata": {},
    "source": [
     "# Build Model"
@@ -245,563 +248,620 @@
   },
   {
    "cell_type": "markdown",
-   "id": "99917563-9d78-4653-98d1-d1884722406c",
+   "id": "4fbe730c-ab0b-4079-8725-af3b3296ff18",
    "metadata": {},
    "source": [
-    "Now that we have our data set up the right way, we can build the model. 🏗"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "f03517a4-e9c7-46f9-ab95-f1ce65a67573",
-   "metadata": {},
-   "source": [
-    "## Baseline"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "7245db1e-6612-4952-8302-4b0fdfeb337a",
-   "metadata": {},
-   "source": [
-    "**Task 5.3.5:** Calculate the baseline accuracy score for your model.\n",
+    "Before we start building the model, let's take a second to talk about something called `KMeans`. \n",
     "\n",
-    "- [What's <span id='tool'>accuracy score</span>?](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)\n",
-    "- [Aggregate data in a Series using `value_counts` in pandas.](../%40textbook/04-pandas-advanced.ipynb#Working-with-value_counts-in-a-Series)"
+    "Take another look at the scatter plot we made at the beginning of this lesson. Remember how the datapoints form little clusters? It turns out we can use an algorithm that partitions the dataset into smaller groups.\n",
+    "\n",
+    "Let's take a look at how those things work together."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3a181afb-a78a-4e85-91b1-a07217bccba9",
+   "id": "54f88523-2a77-45a5-bcc4-252d8d56048a",
    "metadata": {},
    "outputs": [],
    "source": [
-    "acc_baseline = ...\n",
-    "print(\"Baseline Accuracy:\", round(acc_baseline, 4))"
+    "VimeoVideo(\"713919214\", h=\"028502efe7\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "7fbd8830-6b46-43a3-ae06-91aaf2400571",
+   "id": "6034f191-5042-44dd-a752-6567c8bae504",
    "metadata": {},
    "source": [
-    "## Iterate"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "9b0f9f51-75ff-405c-975e-09a3133d9523",
-   "metadata": {},
-   "source": [
-    "So far, we've built single models that predict a single outcome. That's definitely a useful way to predict the future, but what if the one model we built isn't the *right* one? If we could somehow use more than one model simultaneously, we'd have a more trustworthy prediction.\n",
+    "**Task 6.2.5:** Run the cell below to display the `ClusterWidget`.\n",
     "\n",
-    "**Ensemble models** work by building multiple models on random subsets of the same data, and then comparing their predictions to make a final prediction. Since we used a decision tree in the last lesson, we're going to create an ensemble of trees here. This type of model is called a **random forest**.\n",
-    "\n",
-    "We'll start by creating a pipeline to streamline our workflow."
+    "- [What's a centroid?](../%40textbook/16-ml-unsupervised-learning.ipynb#Clustering)\n",
+    "- [What's a cluster?](../%40textbook/16-ml-unsupervised-learning.ipynb#Clustering)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "81530a24-952a-4c78-9d59-231529b6b3ea",
+   "id": "11a542d2-518f-433b-be05-7e9f5c8ceeec",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694695643\", h=\"32c3d5b1ed\", width=600)"
+    "cw = ClusterWidget(n_clusters=3)\n",
+    "cw.show()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "6229c9b5-f739-4a12-a12b-b227eb26674d",
+   "id": "1dd60210-5bfa-4c96-b96d-c49d3ed77f6a",
    "metadata": {},
    "source": [
-    "**Task 5.3.6:** Create a pipeline named `clf` (short for \"classifier\") that contains a `SimpleImputer` transformer and a `RandomForestClassifier` predictor.\n",
-    "Keep the `random_state = 42` for `RandomForestClassifier` predictor.\n",
+    "Take a second and run slowly through all the positions on the slider. At the first position, there's whole bunch of gray datapoints, and if you look carefully, you'll see there are also three stars. Those stars are the **centroids**. At first, their position is set randomly. If you move the slider one more position to the right, you'll see all the gray points change colors that correspond to three clusters.\n",
     "\n",
-    "- [What's an ensemble model?](../%40textbook/14-ml-classification.ipynb#Classification-with-Ensemble-Models)\n",
-    "- [What's a random forest model?](../%40textbook/14-ml-classification.ipynb#Random-Forest)"
+    "Since a centroid represents the mean value of all the data in the cluster, we would expect it to fall in the center of whatever cluster it's in. That's what will happen if you move the slider one more position to the right. See how the centroids moved? \n",
+    "\n",
+    "Aha! But since they moved, the datapoints might not be in the right clusters anymore. Move the slider again, and you'll see the data points redistribute themselves to better reflect the new position of the centroids. The new clusters mean that the centroids also need to move, which will lead to the clusters changing again, and so on, until all the datapoints end up in the right cluster with a centroid that reflects the mean value of all those points.\n",
+    "\n",
+    "Let's see what happens when we try the same with our `\"DEBT\"` and `\"HOUSES\"` data."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "23d29542-cf2c-4e17-b43d-7d42a0a3a5d4",
+   "id": "ca818e2e-284c-4902-9f00-acb2cd1c2fb3",
    "metadata": {},
    "outputs": [],
    "source": [
-    "clf = ...\n",
-    "print(clf)"
+    "VimeoVideo(\"713919177\", h=\"102616b1c3\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "376b73a6-18a0-4ad7-b501-fb08f08d8254",
+   "id": "5d8c5712-a2fa-4452-8df1-611b8a9123c5",
    "metadata": {},
    "source": [
-    "By default, the number of trees in our forest (`n_estimators`) is set to 100. That means when we train this classifier, we'll be fitting 100 trees. While it will take longer to train, it will hopefully lead to better performance.\n",
-    "\n",
-    "In order to get the best performance from our model, we need to tune its hyperparameter. But how can we do this if we haven't created a validation set? The answer is **cross-validation**. So, before we look at hyperparameters, let's see how cross-validation works with the classifier we just built."
+    "**Task 6.2.6:** Run the cell below to display the `SCFClusterWidget`."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "da86d743-198d-4890-8733-e0919168a87e",
-   "metadata": {},
+   "id": "e555382f-0702-4f3a-9863-9ab8cff8687f",
+   "metadata": {
+    "tags": []
+   },
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694695619\", h=\"2c41dca371\", width=600)"
+    "scfc = SCFClusterWidget(x=df[\"DEBT\"], y=df[\"HOUSES\"], n_clusters=3)\n",
+    "scfc.show()"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "ae4c6c98-5db2-4347-aa5b-020730a56bd6",
+   "id": "e9a916f0-d3b9-43dc-8cc6-0a838757b672",
    "metadata": {},
    "source": [
-    "**Task 5.3.7:** Perform cross-validation with your classifier, using the over-sampled training data. We want five folds, so set `cv` to 5. We also want to speed up training, to set `n_jobs` to -1.\n",
+    "## Iterate\n",
     "\n",
-    "- [What's cross-validation?](../%40textbook/14-ml-classification.ipynb#Cross-Validation)\n",
-    "- [Perform k-fold cross-validation on a model in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Cross-Validation)"
+    "Now that you've had a chance to play around with the process a little bit, let's get into how to build a model that does the same thing."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "2c1a44f4-b2d2-4d5e-b426-d63bba2166a5",
+   "id": "daa29a90-70b1-4158-b82a-51e49e829ef6",
    "metadata": {},
    "outputs": [],
    "source": [
-    "cv_acc_scores = ...\n",
-    "print(cv_acc_scores)"
+    "VimeoVideo(\"713919157\", h=\"0b2c3c95f2\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "45c5be54-bd14-4b07-8d9b-abbe4d984e2d",
+   "id": "3fd9ad56-c87b-4837-a057-2600d409274a",
    "metadata": {},
    "source": [
-    "That took kind of a long time, but we just trained 500 random forest classifiers (100 jobs x 5 folds). No wonder it takes so long!\n",
+    "**Task 6.2.7:** Build a `KMeans` model, assign it to the variable name `model`, and fit it to the training data `X`. \n",
     "\n",
-    "Pro tip: even though `cross_val_score` is useful for getting an idea of how cross-validation works, you'll rarely use it. Instead, most people include a `cv` argument when they do a hyperparameter search. "
+    "- [What's k-means clustering?](../%40textbook/16-ml-unsupervised-learning.ipynb#k-means-Clustering)\n",
+    "- [Fit a model to training data in scikit-learn.](../%40textbook/15-ml-regression.ipynb#Fitting-a-Model-to-Training-Data)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "40e6180f-51e4-42ad-9753-d2c39a73e7c8",
+   "id": "a7de441a-16d8-485f-8793-d624aeb3c9c2",
    "metadata": {},
    "source": [
-    "Now that we have an idea of how cross-validation works, let's tune our model. The first step is creating a range of hyperparameters that we want to evaluate. "
+    "<div class=\"alert alert-info\" role=\"alert\">\n",
+    "    <b>Tip:</b> The k-means clustering algorithm relies on random processes, so don't forget to set a <code>random_state</code> for all your models in this lesson.\n",
+    "</div>"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "34d4abf2-dd15-4b65-acde-cee1c3b4a3e5",
+   "id": "4426994a-a944-4e4f-903d-62cf639a14e8",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694695593\", h=\"5143f0b63f\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "4d7c6240-88cd-4a9a-b384-ad049861eff3",
-   "metadata": {},
-   "source": [
-    "**Task 5.3.8:** Create a dictionary with the range of hyperparameters that we want to evaluate for our classifier. \n",
-    "\n",
-    "1. For the `SimpleImputer`, try both the `\"mean\"` and `\"median\"` strategies. \n",
-    "2. For the `RandomForestClassifier`, try `max_depth` settings between 10 and 50, by steps of 10. \n",
-    "3. Also for the `RandomForestClassifier`, try `n_estimators` settings between 25 and 100 by steps of 25.\n",
-    "\n",
-    "- [What's a dictionary?](../%40textbook/01-python-getting-started.ipynb#Python-Dictionaries)\n",
-    "- [What's a hyperparameter?](../%40textbook/17-ts-core.ipynb#Hyperparameters)\n",
-    "- [Create a range in Python](../%40textbook/18-ts-models.ipynb#Hyperparameters)\n",
-    "- [Define a hyperparameter grid for model tuning in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Hyperparameter-Tuning)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f5330f53-2ddf-4261-a17e-3ba7afc3faea",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "params = ...\n",
-    "params"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "77360385-ab0f-4d0e-b3ca-3e4faace353c",
-   "metadata": {},
-   "source": [
-    "Now that we have our hyperparameter grid, let's incorporate it into a **grid search**."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "93206456-d95b-4d13-8995-ff3acdfe323b",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694695574\", h=\"8588bf015f\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "2c25ceef-6e09-4453-b638-dfc0b691a1c6",
-   "metadata": {},
-   "source": [
-    "**Task 5.3.9:** Create a `GridSearchCV` named `model` that includes your classifier and hyperparameter grid. Be sure to use the same arguments for `cv` and `n_jobs` that you used above, and set `verbose` to 1. \n",
-    "\n",
-    "- [What's cross-validation?](../%40textbook/14-ml-classification.ipynb#Cross-Validation)\n",
-    "- [What's a grid search?](../%40textbook/14-ml-classification.ipynb#Grid-Search)\n",
-    "- [Perform a hyperparameter grid search in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Grid-Search)"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "4ee09ca3-07af-4543-828e-46d38a8a05d1",
-   "metadata": {},
-   "outputs": [],
-   "source": [
+    "# Build model\n",
     "model = ...\n",
-    "model"
+    "print(\"model type:\", type(model))\n",
+    "\n",
+    "# Fit model to data\n",
+    "\n",
+    "# Assert that model has been fit to data\n",
+    "check_is_fitted(model)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "34093b4b-1c94-4c94-99a5-32c48f641322",
+   "id": "933b266a-94a1-45e1-b87c-3e934753c5ab",
    "metadata": {},
    "source": [
-    "Finally, now let's fit the model."
+    "And there it is. 42 datapoints spread across three clusters. Let's grab the labels that the model has assigned to the data points so we can start making a new visualization."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "e26e1038-e227-435b-945d-e5c1498f2d82",
+   "id": "e1a58c5d-7487-4ae3-b415-85611eb3b145",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694695566\", h=\"f4e9910a9e\", width=600)"
+    "VimeoVideo(\"713919137\", h=\"7eafe805ff\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "0c701d28-dad6-4133-9438-70e554761c35",
+   "id": "be8151eb-10db-4d34-9cd5-15540abadcee",
    "metadata": {},
    "source": [
-    "**Task 5.3.10:** Fit `model` to the over-sampled training data."
+    "**Task 6.2.8:** Extract the labels that your `model` created during training and assign them to the variable `labels`.\n",
+    "\n",
+    "- [Access an object in a pipeline in scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c8367806-ae6b-46cb-9a16-bffd1a4a070c",
+   "id": "cd5fbe19-b0c5-44eb-84c7-942c08c4280b",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Train model\n"
+    "labels = ...\n",
+    "print(\"labels type:\", type(labels))\n",
+    "print(\"labels shape:\", labels.shape)\n",
+    "labels[:10]"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "4faafd99-fd3a-49d5-b002-0d88170aecc6",
+   "id": "bde33cf2-8576-48df-8dad-9512584edeae",
    "metadata": {},
    "source": [
-    "This will take some time to train, so let's take a moment to think about why. How many forests did we just test? 4 different `max_depth`s times 3 `n_estimator`s times 2 imputation strategies... that makes 24 forests. How many fits did we just do? 24 forests times 5 folds is 120. And remember that each forest is comprised of 25-75 trees, which works out to *at least* 3,000 trees. So it's computationally expensive! \n",
-    "\n",
-    "Okay, now that we've tested all those models, let's take a look at the results."
+    "Using the labels we just extracted, let's recreate the scatter plot from before, this time we'll color each point according to the cluster to which the model assigned it."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "121ea0ba-8bce-452d-ba85-c42e2b294490",
+   "id": "95452118-096f-41ab-a0d7-9b7ea6819b3b",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694695546\", h=\"4ae60129c4\", width=600)"
+    "VimeoVideo(\"713919104\", h=\"2f6d4285f1\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "9cb4b8fb-3422-486e-9c00-bb24a685ad3c",
+   "id": "27b7abe8-9efe-4e63-98d1-71a9c7cc1744",
    "metadata": {},
    "source": [
-    "**Task 5.3.11:** Extract the cross-validation results from `model` and load them into a DataFrame named `cv_results`.\n",
+    "**Task 6.2.9:** Recreate the \"Home Value vs. Household Debt\" scatter plot you made above, but with two changes. First, use seaborn to create the plot. Second, pass your `labels` to the `hue` argument, and set the `palette` argument to `\"deep\"`. \n",
     "\n",
-    "- [Get cross-validation results from a hyperparameter search in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Grid-Search)"
+    "- [What's a scatter plot?](../%40textbook/06-visualization-matplotlib.ipynb#Scatter-Plots)\n",
+    "- [Create a scatter plot using seaborn.](../%40textbook/09-visualization-seaborn.ipynb#Scatter-Plots)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "0b2bd176-3c3e-425c-bbbc-6915cb5b9944",
+   "id": "d9994a61-c6a3-4ccd-9714-edee0ccf2c62",
    "metadata": {},
    "outputs": [],
    "source": [
-    "cv_results = ...\n",
-    "cv_results.head(10)"
+    "# Plot \"HOUSES\" vs \"DEBT\" with hue=label\n",
+    "\n",
+    "plt.xlabel(\"Household Debt [$1M]\")\n",
+    "plt.ylabel(\"Home Value [$1M]\")\n",
+    "plt.title(\"Credit Fearful: Home Value vs. Household Debt\");"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "ce855361-5586-476e-8701-dcafa941947d",
+   "id": "6b448021-405c-4422-8670-ce5a51832c5d",
    "metadata": {},
    "source": [
-    "In addition to the accuracy scores for all the different models we tried during our grid search, we can see how long it took each model to train. Let's take a closer look at how different hyperparameter settings affect training time. \n",
-    "\n",
-    "First, we'll look at `n_estimators`. Our grid search evaluated this hyperparameter for various `max_depth` settings, but let's only look at models where `max_depth` equals 10."
+    "Nice! Each cluster has its own color. The centroids are still missing, so let's pull those out."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "ad9ea59f-4479-47c9-bd88-5ac324150a8a",
+   "id": "b0152691-344a-4c22-b7b9-48420858ec30",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694695537\", h=\"e460435664\", width=600)"
+    "VimeoVideo(\"713919087\", h=\"9b8635c9a8\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "0c189c09-8a8c-474d-8f26-ea4175fde382",
+   "id": "7a77cd64-ee85-4378-b6e8-efffa7e57630",
    "metadata": {},
    "source": [
-    "**Task 5.3.12:** Create a mask for `cv_results` for rows where `\"param_randomforestclassifier__max_depth\"` equals 10. Then plot `\"param_randomforestclassifier__n_estimators\"` on the x-axis and `\"mean_fit_time\"` on the y-axis. Don't forget to label your axes and include a title. \n",
+    "**Task 6.2.10:** Extract the centroids that your `model` created during training, and assign them to the variable `centroids`. \n",
     "\n",
-    "- [Subset a DataFrame with a mask using pandas.](../%40textbook/04-pandas-advanced.ipynb)\n",
-    "- [Create a line plot in Matplotlib.](../%40textbook/06-visualization-matplotlib.ipynb)"
+    "- [What's a centroid?](../%40textbook/16-ml-unsupervised-learning.ipynb#Clustering)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "a34c23f8-79aa-41e3-b140-39df4a61c7e7",
+   "id": "bd2340a9-8f69-4ce4-8fca-d80718bfd9e2",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Create mask\n",
-    "mask = ...\n",
-    "# Plot fit time vs n_estimators\n",
-    "\n",
-    "# Label axes\n",
-    "plt.xlabel(\"Number of Estimators\")\n",
-    "plt.ylabel(\"Mean Fit Time [seconds]\")\n",
-    "plt.title(\"Training Time vs Estimators (max_depth=10)\");"
+    "centroids = ...\n",
+    "print(\"centroids type:\", type(centroids))\n",
+    "print(\"centroids shape:\", centroids.shape)\n",
+    "centroids"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "9e6bf12e-b7c0-4e67-9181-f74e18a199f0",
+   "id": "2a62afc8-9119-4ea9-a4ba-c481692e3d9b",
    "metadata": {},
    "source": [
-    "Next, we'll look at `max_depth`. Here, we'll also limit our data to rows where `n_estimators` equals 25."
+    "Let's add the centroids to the graph."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "f87c4c61-d6b8-476c-86bd-5404b63b8372",
+   "id": "badc12c5-c407-4673-9905-95253e5501b3",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694695525\", h=\"99f2dfc9eb\", width=600)"
+    "VimeoVideo(\"713919002\", h=\"08cba14f6b\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "6aec1af3-6701-452c-a149-fa67904fec79",
+   "id": "0cf0a343-0df2-4d79-bcdf-b790e1cade78",
    "metadata": {},
    "source": [
-    "**Task 5.3.13:** Create a mask for `cv_results` for rows where `\"param_randomforestclassifier__n_estimators\"` equals 25. Then plot `\"param_randomforestclassifier__max_depth\"` on the x-axis and `\"mean_fit_time\"` on the y-axis. Don't forget to label your axes and include a title. \n",
+    "**Task 6.2.11:** Recreate the seaborn \"Home Value vs. Household Debt\" scatter plot you just made, but with one difference: Add the `centroids` to the plot. Be sure to set the centroids color to `\"gray\"`.\n",
     "\n",
-    "- [Subset a DataFrame with a mask using pandas.](../%40textbook/04-pandas-advanced.ipynb)\n",
-    "- [Create a line plot in Matplotlib.](../%40textbook/06-visualization-matplotlib.ipynb)"
+    "- [What's a scatter plot?](../%40textbook/06-visualization-matplotlib.ipynb#Scatter-Plots)\n",
+    "- [Create a scatter plot using seaborn.](../%40textbook/09-visualization-seaborn.ipynb#Scatter-Plots)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c68f27d4-ca7a-4572-b29f-98e884802d56",
+   "id": "e646d42b-2b5f-44e6-b349-e37c29621540",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Create mask\n",
+    "# Plot \"HOUSES\" vs \"DEBT\", add centroids\n",
     "\n",
-    "mask = ...\n",
-    "# Plot fit time vs max_depth\n",
-    "\n",
-    "\n",
-    "# Label axes\n",
-    "plt.xlabel(\"Max Depth\")\n",
-    "plt.ylabel(\"Mean Fit Time [seconds]\")\n",
-    "plt.title(\"Training Time vs Max Depth (n_estimators=25)\");"
+    "plt.xlabel(\"Household Debt [$1M]\")\n",
+    "plt.ylabel(\"Home Value [$1M]\")\n",
+    "plt.title(\"Credit Fearful: Home Value vs. Household Debt\");"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "fea4fdf4-0b13-4b5f-8287-f10445ccc3a6",
+   "id": "bcb051f7-7552-4164-aebd-17166a0296e6",
    "metadata": {},
    "source": [
-    "There's a general upwards trend, but we see a lot of up-and-down here. That's because for each max depth, grid search tries two different imputation strategies: mean and median. Median is a lot faster to calculate, so that speeds up training time. \n",
+    "That looks great, but let's not pat ourselves on the back just yet. Even though our graph makes it *look* like the clusters are correctly assigned but, as data scientists, we need a numerical evaluation. The data we're using is pretty clear-cut, but if things were a little more muddled, we'd want to run some calculations to make sure we got everything right.\n",
     "\n",
-    "Finally, let's look at the hyperparameters that led to the best performance. "
+    "There are two metrics that we'll use to evaluate our clusters. We'll start with **inertia**, which measure the distance between the points *within the same cluster*. "
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "b9681033-537f-4438-b67a-0290419a4dad",
+   "id": "d417612a-1837-4d68-ad08-0b24b0f302e8",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694695505\", h=\"f98f660ce1\", width=600)"
+    "VimeoVideo(\"713918749\", h=\"bfc741b1e7\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "dcfe1215-0bd9-42b7-ba5f-081b6cc05dcb",
+   "id": "0d90b232-9fc0-4aaa-92e4-3c85df93fef2",
    "metadata": {},
    "source": [
-    "**Task 5.3.14:** Extract the best hyperparameters from `model`.\n",
+    "<div class=\"alert alert-info\" role=\"alert\">\n",
+    "    <p><b>Question:</b> What do those double bars in the equation mean?</p>\n",
+    "    <p><b>Answer:</b> It's the <i>L2 norm</i>, that is, the non-negative Euclidean distance between each datapoint and its centroid. In Python, it would be something like <code>sqrt((x1-c)**2 + (x2-c)**2) + ...)</code>.</p>\n",
+    "    <p>Many thanks to Aghogho Esuoma Monorien for his comment in the forum! 🙏</p>\n",
+    "</div>"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9f2d01c0-3811-4cfd-b6dc-92a6e57c8f8a",
+   "metadata": {},
+   "source": [
+    "**Task 6.2.12:** Extract the inertia for your `model` and assign it to the variable `inertia`.\n",
     "\n",
-    "- [Get settings from a hyperparameter search in scikit-learn.](../%40textbook/14-ml-classification.ipynb#Cross-Validation)"
+    "- [What's inertia?](../%40textbook/16-ml-unsupervised-learning.ipynb#Inertia)\n",
+    "- [Access an object in a pipeline in scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)\n",
+    "- [Calculate the inertia for a model in scikit-learn.](../%40textbook/16-ml-unsupervised-learning.ipynb#Inertia)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "282a14d4-dddf-4042-b18e-229b46ce5e1b",
+   "id": "e606a8e4-8087-4f9f-ab9f-def5a2c02e17",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Extract best hyperparameters\n"
+    "inertia = ...\n",
+    "print(\"inertia type:\", type(inertia))\n",
+    "print(\"Inertia (3 clusters):\", inertia)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "acf32ded-07fb-4452-a439-ac94055ba3b0",
+   "id": "c5a860be-2cd4-4d40-9285-4748ba2222a3",
    "metadata": {},
    "source": [
-    "Note that we don't need to build and train a new model with these settings. Now that the grid search is complete, when we use `model.predict()`, it will serve up predictions using the best model — something that we'll do at the end of this lesson."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "3aaaaa92-edfe-4e33-b7e8-aa3f076ed00a",
-   "metadata": {},
-   "source": [
-    "## Evaluate"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "087b3534-2488-4b78-bdd0-dfd441b558f9",
-   "metadata": {},
-   "source": [
-    "All right: The moment of truth. Let's see how our model performs."
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "a805626d-6ad2-456b-86cc-3cc2c0b4f756",
-   "metadata": {},
-   "source": [
-    "**Task 5.3.15:** Calculate the training and test accuracy scores for `model`. \n",
+    "The \"best\" inertia is 0, and our score is pretty far from that. Does that mean our model is \"bad?\" Not necessarily. Inertia is a measurement of distance (like mean absolute error from Project 2). This means that the unit of measurement for inertia depends on the unit of measurement of our x- and y-axes. And since `\"DEBT\"` and `\"HOUSES\"` are measured in tens of millions of dollars, it's not surprising that inertia is so large. \n",
     "\n",
-    "- [<span id='technique'>Calculate the accuracy score for a model in <span id='term'>scikit-learn</span></span>.](../%40textbook/14-ml-classification.ipynb#Calculating-Accuracy-Score)"
+    "However, it would be helpful to have metric that was easier to interpret, and that's where **silhouette score** comes in. Silhouette score measures the distance *between different clusters*. It ranges from -1 (the worst) to 1 (the best), so it's easier to interpret than inertia. <span style='color: transparent; font-size:1%'>WQU WorldQuant University Applied Data Science Lab QQQQ</span>"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "c20b2755-83b4-4b06-a5a0-ba73ff92e108",
+   "id": "35814eed-8531-449c-81cd-ec26c9a82a23",
    "metadata": {},
    "outputs": [],
    "source": [
-    "acc_train = ...\n",
-    "acc_test = ...\n",
+    "VimeoVideo(\"713918501\", h=\"0462c4784a\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a7c4556e-ccdd-43e5-9e83-b7c1cec8f521",
+   "metadata": {},
+   "source": [
+    "**Task 6.2.13:** Calculate the silhouette score for your model and assign it to the variable `ss`.\n",
     "\n",
-    "print(\"Training Accuracy:\", round(acc_train, 4))\n",
-    "print(\"Test Accuracy:\", round(acc_test, 4))"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "c36a4347-0dfa-431e-8a02-de12eacde35b",
-   "metadata": {},
-   "source": [
-    "We beat the baseline! Just barely, but we beat it. "
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "36e54aae-4580-483d-bbb5-d8b70dd25572",
-   "metadata": {},
-   "source": [
-    "Next, we're going to use a confusion matrix to see how our model performs. To better understand the values we'll see in the matrix, let's first count how many observations in our test set belong to the positive and negative classes. "
+    "- [What's silhouette score?](../%40textbook/16-ml-unsupervised-learning.ipynb#Silhouette-Score)\n",
+    "- [Calculate the silhouette score for a model in scikit-learn.](../%40textbook/16-ml-unsupervised-learning.ipynb#Silhouette-Score)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "dfa2b41c-02a0-4a36-8a99-9e515b211d3f",
+   "id": "28ee87d9-a855-4f84-b998-754e64330972",
    "metadata": {},
    "outputs": [],
    "source": [
-    "y_test.value_counts()"
+    "ss = ...\n",
+    "print(\"ss type:\", type(ss))\n",
+    "print(\"Silhouette Score (3 clusters):\", ss)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "3eacc169-b9dd-42e6-9afa-2ce9179d397f",
+   "metadata": {},
+   "source": [
+    "Outstanding! 0.976 is pretty close to 1, so our model has done a good job at identifying 3 clusters that are far away from each other."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "40a37622-0388-41c4-b150-3a6d998d6945",
+   "metadata": {},
+   "source": [
+    "It's important to remember that these performance metrics are the result of the number of clusters we told our model to create. In unsupervised learning, the number of clusters is hyperparameter that you set before training your model. So what would happen if we change the number of clusters? Will it lead to better performance? Let's try!"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "19597e4f-1db4-4e5f-a273-df994676ae5d",
+   "id": "10357197-5d19-4a9e-99c8-323e873ca470",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"694695486\", h=\"1d6ac2bf77\", width=600)"
+    "VimeoVideo(\"713918420\", h=\"e16f3735c7\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "8552562a-c27a-462f-b99b-637c2e7d2da7",
+   "id": "2ddb791b-dd46-44af-aec0-ceaf151f775e",
    "metadata": {},
    "source": [
-    "**Task 5.3.16:** Plot a confusion matrix that shows how your best model performs on your test set. \n",
+    "**Task 6.2.14:** Use a `for` loop to build and train a K-Means model where `n_clusters` ranges from 2 to 12 (inclusive). Each time a model is trained, calculate the inertia and add it to the list `inertia_errors`, then calculate the silhouette score and add it to the list `silhouette_scores`."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "919be49c-49d0-40ec-bf34-da04c51c4229",
+   "metadata": {},
+   "source": [
+    "- [Write a `for` loop in Python.](../%40textbook/01-python-getting-started.ipynb#Working-with-for-Loops)\n",
+    "- [Calculate the inertia for a model in scikit-learn.](../%40textbook/16-ml-unsupervised-learning.ipynb#Inertia)\n",
+    "- [Calculate the silhouette score for a model in scikit-learn.](../%40textbook/16-ml-unsupervised-learning.ipynb#Silhouette-Score)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7161b0d6-4ceb-4576-b541-0e58421f0a00",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "n_clusters = ...\n",
+    "inertia_errors = ...\n",
+    "silhouette_scores = ...\n",
     "\n",
-    "- [What's a confusion matrix?](../%40textbook/14-ml-classification.ipynb#Confusion-Matrix)\n",
-    "- [Create a confusion matrix using scikit-learn.](../%40textbook/14-ml-classification.ipynb#Confusion-Matrix) "
+    "# Add `for` loop to train model and calculate inertia, silhouette score.\n",
+    "\n",
+    "\n",
+    "print(\"inertia_errors type:\", type(inertia_errors))\n",
+    "print(\"inertia_errors len:\", len(inertia_errors))\n",
+    "print(\"Inertia:\", inertia_errors)\n",
+    "print()\n",
+    "print(\"silhouette_scores type:\", type(silhouette_scores))\n",
+    "print(\"silhouette_scores len:\", len(silhouette_scores))\n",
+    "print(\"Silhouette Scores:\", silhouette_scores)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "4e533481-06df-48a1-ab7a-1d590fd73e69",
+   "metadata": {},
+   "source": [
+    "Now that we have both performance metrics for several different settings of `n_clusters`, let's make some line plots to see the relationship between the number of clusters in a model and its inertia and silhouette scores."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "5d5cb2c9-d296-4363-b26c-240cc71f51a3",
+   "id": "bf077922-f9a1-4213-b510-1b5f0b2aaaa3",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Plot confusion matrix\n"
+    "VimeoVideo(\"713918224\", h=\"32ff34ffa1\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "967aca43-c5a3-47fd-b814-54c905897c0f",
+   "id": "5f5b4dc1-ed01-4e3b-bc38-9cc82f384b9b",
    "metadata": {},
    "source": [
-    "Notice the relationship between the numbers in this matrix with the count you did the previous task. If you sum the values in the bottom row, you get the total number of positive observations in `y_test` ($72 + 11 = 83$). And the top row sum to the number of negative observations ($1903 + 10 = 1913$)."
+    "**Task 6.2.15:** Create a line plot that shows the values of `inertia_errors` as a function of `n_clusters`. Be sure to label your x-axis `\"Number of Clusters\"`, your y-axis `\"Inertia\"`, and use the title `\"K-Means Model: Inertia vs Number of Clusters\"`.\n",
+    "\n",
+    "- [Create a line plot in Matplotlib.](../%40textbook/07-visualization-pandas.ipynb#Line-Plots)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "23eb146d-54aa-4338-9f1e-70be64241831",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot `inertia_errors` by `n_clusters`\n"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "faac53ee-1a0e-423b-b68e-e85cce11bfc9",
+   "id": "2eb69ba0-1c59-4e57-833b-243620560684",
+   "metadata": {},
+   "source": [
+    "What we're seeing here is that, as the number of clusters increases, inertia goes down. In fact, we could get inertia to 0 if we told our model to make 4,623 clusters (the same number of observations in `X`), but those clusters wouldn't be helpful to us.\n",
+    "\n",
+    "The trick with choosing the right number of clusters is to look for the \"bend in the elbow\" for this plot. In other words, we want to pick the point where the drop in inertia becomes less dramatic and the line begins to flatten out. In this case, it looks like the sweet spot is 4 or 5. \n",
+    "\n",
+    "Let's see what the silhouette score looks like. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cccb601b-229d-44cf-8c53-cfb990e3ebfa",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"713918153\", h=\"3f3a1312d2\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b8031362-7e80-4732-a219-68d37cc75130",
+   "metadata": {},
+   "source": [
+    "**Task 6.2.16:** Create a line plot that shows the values of `silhouette_scores` as a function of `n_clusters`. Be sure to label your x-axis `\"Number of Clusters\"`, your y-axis `\"Silhouette Score\"`, and use the title `\"K-Means Model: Silhouette Score vs Number of Clusters\"`.\n",
+    "\n",
+    "- [Create a line plot in Matplotlib.](../%40textbook/07-visualization-pandas.ipynb#Line-Plots)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "63c717f9-fe1f-447b-814c-c3102a6a6712",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot `silhouette_scores` vs `n_clusters`\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6f369f10-aedb-4921-ac4e-4c6d9782951e",
+   "metadata": {},
+   "source": [
+    "Note that, in contrast to our inertia plot, bigger is better. So we're not looking for a \"bend in the elbow\" but rather a number of clusters for which the silhouette score still remains high. We can see that silhouette score drops drastically beyond 4 clusters. Given this and what we saw in the inertia plot, it looks like the optimal number of clusters is 4. \n",
+    "\n",
+    "Now that we've decided on the final number of clusters, let's build a final model."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2d144728-dfa6-4c10-a13e-dc41230886b9",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"713918108\", h=\"e6aa88569e\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "21131c9e-82ba-4a10-b05b-29157841a178",
+   "metadata": {},
+   "source": [
+    "**Task 6.2.17:** Build and train a new k-means model named `final_model`. Use the information you gained from the two plots above to set an appropriate value for the `n_clusters` argument. Once you've built and trained your model, submit it to the grader for evaluation. \n",
+    "\n",
+    "- [Fit a model to training data in scikit-learn.](../%40textbook/15-ml-regression.ipynb#Fitting-a-Model-to-Training-Data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8f731ce5-87d5-4c31-806f-2d5184c6c741",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Build model\n",
+    "final_model = ...\n",
+    "\n",
+    "# Fit model to data\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d5cb0f75-4972-40f5-88c5-568769063827",
+   "metadata": {},
+   "source": [
+    "(In case you're wondering, we don't need an *Evaluate* section in this notebook because we don't have any test data to evaluate our model with.)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "63474b1b-2841-43eb-b11c-da16b078e452",
    "metadata": {},
    "source": [
     "# Communicate"
@@ -810,160 +870,143 @@
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "dcc8a047-c831-4f31-bc75-8d8b785e8bf4",
+   "id": "fc0f71f4-df28-4f56-8a9f-2729e123c601",
    "metadata": {},
    "outputs": [],
    "source": [
-    "VimeoVideo(\"698358615\", h=\"3fd4b2186a\", width=600)"
+    "VimeoVideo(\"713918073\", h=\"3929b58011\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "e867677d-1700-499d-8a92-c1d620510d1d",
+   "id": "8f50eac2-9cb8-48c1-b42c-be2a62b9149d",
    "metadata": {},
    "source": [
-    "**Task 5.3.17:** Create a horizontal bar chart with the 10 most important features for your model. "
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "6a803d93-9b7c-4529-999b-326144b17fbd",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "# Get feature names from training data\n",
-    "features = ...\n",
-    "# Extract importances from model\n",
-    "importances = ...\n",
-    "# Create a series with feature names and importances\n",
-    "feat_imp = ...\n",
-    "# Plot 10 most important features\n",
+    "**Task 6.2.18:** Create one last \"Home Value vs. Household Debt\" scatter plot that shows the clusters that your `final_model` has assigned to the training data. \n",
     "\n",
+    "- [What's a scatter plot?](../%40textbook/06-visualization-matplotlib.ipynb#Scatter-Plots)\n",
+    "- [Create a scatter plot using Matplotlib.](../%40textbook/06-visualization-matplotlib.ipynb#Scatter-Plots)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "670ddaf1-a5d3-4ea0-8486-bfbaf11011d0",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot \"HOUSES\" vs \"DEBT\" with final_model labels\n",
     "\n",
-    "plt.xlabel(\"Gini Importance\")\n",
-    "plt.ylabel(\"Feature\")\n",
-    "plt.title(\"Feature Importance\");"
+    "plt.xlabel(\"Household Debt [$1M]\")\n",
+    "plt.ylabel(\"Home Value [$1M]\")\n",
+    "plt.title(\"Credit Fearful: Home Value vs. Household Debt\");"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "5b0471e4-ac32-4b45-85ba-d7169757293e",
+   "id": "feab7c75-c95b-4305-bb5a-8a9f99897565",
    "metadata": {},
    "source": [
-    "The only thing left now is to save your model so that it can be reused."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "41330d0b-96b1-4985-bcd8-e75635e2719e",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694695478\", h=\"a13bdacb55\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "7cf82a6b-81b7-402e-97e0-247b48e2af27",
-   "metadata": {},
-   "source": [
-    "**Task 5.3.18:** Using a context manager, save your best-performing model to a a file named `\"model-5-3.pkl\"`. \n",
+    "Nice! You can see all four of our clusters, each differentiated from the rest by color.\n",
     "\n",
-    "- [What's serialization?](../%40textbook/03-pandas-getting-started.ipynb#Pickle-Files)\n",
-    "- [Store a Python object as a serialized file using pickle.](../%40textbook/03-pandas-getting-started.ipynb#Pickle-Files) "
+    "We're going to make one more visualization, converting the cluster analysis we just did to something a little more actionable: a side-by-side bar chart. In order to do that, we need to put our clustered data into a DataFrame."
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "3038e7b4-e125-4315-8764-4259907bd362",
+   "id": "15b7248a-b14a-4fd8-9470-e4096202e14f",
    "metadata": {},
    "outputs": [],
    "source": [
-    "# Save model\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "a633e34a-8827-4d7f-b3d0-7155363b0837",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694695451\", h=\"fc96dd8d1f\", width=600)"
+    "VimeoVideo(\"713918023\", h=\"110156bd98\", width=600)"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "8b6f4286-8f3f-449f-bf52-39d3fe02eefb",
+   "id": "4a488652-d2f7-4de5-967d-9d9435291e72",
    "metadata": {},
    "source": [
-    "**Task 5.3.19:** Create a function `make_predictions`. It should take two arguments: the path of a JSON file that contains test data and the path of a serialized model. The function should load and clean the data using the `wrangle` function you created, load the model, generate an array of predictions, and convert that array into a Series. (The Series should have the name `\"bankrupt\"` and the same index labels as the test data.) Finally, the function should return its predictions as a Series. \n",
+    "**Task 6.2.19:** Create a DataFrame `xgb` that contains the mean `\"DEBT\"` and `\"HOUSES\"` values for each of the clusters in your `final_model`.\n",
     "\n",
-    "- [What's a function?](../%40textbook/02-python-advanced.ipynb#Functions)\n",
-    "- [Load a serialized file](../%40textbook/03-pandas-getting-started.ipynb#Pickle-Files)\n",
-    "- [What's a Series?](../%40textbook/05-pandas-summary-statistics.ipynb#Series)\n",
-    "- [Create a Series in pandas](../%40textbook/03-pandas-getting-started.ipynb#Working-with-Columns)"
+    "- [Access an object in a pipeline in scikit-learn.](../%40textbook/13-ml-data-pre-processing-and-production.ipynb#Accessing-an-Object-in-a-Pipeline)\n",
+    "- [Aggregate data using the groupby method in pandas.](../%40textbook/04-pandas-advanced.ipynb#Series-and-Groupby)\n",
+    "- [Create a DataFrame from a Series in pandas.](../%40textbook/04-pandas-advanced.ipynb#Series-and-Groupby)"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": null,
-   "id": "1ca88012-3462-429c-a5f4-d7cf9af9c54c",
+   "id": "86c83bd0-4546-4457-96d3-f5a5e21bea9c",
    "metadata": {},
    "outputs": [],
    "source": [
-    "def make_predictions(data_filepath, model_filepath):\n",
-    "    # Wrangle JSON file\n",
-    "    X_test = ...\n",
-    "    # Load model\n",
-    "    \n",
-    "    # Generate predictions\n",
-    "    y_test_pred = ...\n",
-    "    # Put predictions into Series with name \"bankrupt\", and same index as X_test\n",
-    "    y_test_pred = ...\n",
-    "    return y_test_pred"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "662a4e31-0f61-4b3a-be66-ddbf69cfd622",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "VimeoVideo(\"694695426\", h=\"f75588d43a\", width=600)"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "id": "456ba113-e075-427c-8f3a-ffb9b6975c7b",
-   "metadata": {},
-   "source": [
-    "**Task 5.3.20:** Use the code below to check your `make_predictions` function. Once you're satisfied with the result, click on the check the activity button on the left side of the panel."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "c668b57d-93e0-4f64-857e-60b4e0b07b67",
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "y_test_pred = make_predictions(\n",
-    "    data_filepath=\"data/poland-bankruptcy-data-2009-mvp-features.json.gz\",\n",
-    "    model_filepath=\"model-5-3.pkl\",\n",
-    ")\n",
+    "xgb = ...\n",
     "\n",
-    "print(\"predictions shape:\", y_test_pred.shape)\n",
-    "y_test_pred.head()"
+    "print(\"xgb type:\", type(xgb))\n",
+    "print(\"xgb shape:\", xgb.shape)\n",
+    "xgb"
    ]
   },
   {
    "cell_type": "markdown",
-   "id": "4a4e70bf",
+   "id": "101e4725-a0c9-4430-aba8-cc478819951a",
+   "metadata": {},
+   "source": [
+    "Before you move to the next task, print out the `cluster_centers_` for your `final_model`. Do you see any similarities between them and the DataFrame you just made? Why do you think that is?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "06ef23af-6311-4637-b223-0ad006f7871f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "VimeoVideo(\"713917740\", h=\"bcc496c2d9\", width=600)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5e5ca07a-dbda-4c96-9326-81e193ac7734",
+   "metadata": {},
+   "source": [
+    "**Task 6.2.20:** Create a side-by-side bar chart from `xgb` that shows the mean `\"DEBT\"` and `\"HOUSES\"` values for each of the clusters in your `final_model`. For readability, you'll want to divide the values in `xgb` by 1 million. Be sure to label the x-axis `\"Cluster\"`, the y-axis `\"Value [$1 million]\"`, and use the title `\"Mean Home Value & Household Debt by Cluster\"`.\n",
+    "\n",
+    "- [Create a bar chart using pandas.](../%40textbook/07-visualization-pandas.ipynb#Bar-Charts)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "2c1279e4-83db-4f5a-a56b-6ba2271c900e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create side-by-side bar chart of `xgb`\n",
+    "\n",
+    "plt.xlabel(\"Cluster\")\n",
+    "plt.ylabel(\"Value [$1 million]\")\n",
+    "plt.title(\"Mean Home Value & Household Debt by Cluster\");"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d7ff343c-2a60-4954-bec3-98983791df85",
+   "metadata": {},
+   "source": [
+    "In this plot, we have our four clusters spread across the x-axis, and the dollar amounts for home value and household debt on the y-axis. \n",
+    "\n",
+    "The first thing to look at in this chart is the different mean home values for the five clusters. Clusters 0 represents households with small to moderate home values, clusters 2 and 3 have high home values, and cluster 1 has extremely high values. \n",
+    "\n",
+    "The second thing to look at is the proportion of debt to home value. In clusters 1 and 3, this proportion is around 0.5. This suggests that these groups have a moderate amount of untapped equity in their homes. But for group 0, it's almost 1, which suggests that the largest source of household debt is their mortgage. Group 2 is unique in that they have the smallest proportion of debt to home value, around 0.4.\n",
+    "\n",
+    "This information could be useful to financial institution that want to target customers with products that would appeal to them. For instance, households in group 0 might be interested in refinancing their mortgage to lower their interest rate. Group 2 households could be interested in a [home equity line of credit](https://www.investopedia.com/home-equity-line-of-credit-heloc-definition-5217473) because they have more equity in their homes. And the bankers, Bill Gates, and Beyoncés in group 1 might want white-glove personalized wealth management. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "6deb557f",
    "metadata": {
     "deletable": false,
     "editable": false
@@ -993,6 +1036,11 @@
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
    "version": "3.11.0"
+  },
+  "vscode": {
+   "interpreter": {
+    "hash": "916dbcbb3f70747c44a77c7bcd40155683ae19c65e1c03b4aa3499c5328201f1"
+   }
   },
   "widgets": {
    "application/vnd.jupyter.widget-state+json": {
